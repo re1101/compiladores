@@ -1,3 +1,4 @@
 # Compilador
 
-Java code to kinda compile some C code
+Small apps to kinda compile some C code
+Currently on Java and Rust

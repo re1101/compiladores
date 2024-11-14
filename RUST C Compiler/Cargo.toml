@@ -1,0 +1,17 @@
+[package]
+name = "RUST C Compiler"
+version = "0.1.0"
+authors = ["re1101 <romaro1101@gmail.com>"]
+rust-version = "1.82"
+edition = "2021"
+description = "Small app to kinda compile some C code"
+readme = "../README.md"
+repository = "https://github.com/re1101/compiladores"
+publish = false
+
+[dependencies]
+regex = "1.5"
+
+[[bin]]
+name = "main"
+path = "src/main"
