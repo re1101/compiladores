@@ -1,0 +1,4 @@
+int a =9;
+a integer 13;
+char prueb; var2- 10;
+variable 12;-var =8;
