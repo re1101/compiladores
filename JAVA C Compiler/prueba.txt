@@ -1,4 +1,9 @@
-int a =9;
-a integer 13;
-char prueb; var2- 10;
-variable 12;-var =8;
+int func(int a){
+    int nonFunc = 12, b;
+}
+if(a == 12 && 12>10){
+    ;;;;;;;;;;;;;
+} 
+var = 13;
+char prueb;
+int variable = 12;
