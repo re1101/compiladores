@@ -1,4 +1,17 @@
-int a =9;
-a integer 13;
-char prueb; var2- 10;
-variable 12;-var =8;
+int funcion(int a){
+ 
+    int c = 8;
+
+} 
+
+b=9;
+int integer = 13;
+char prueb; 
+var= 2 - 10;
+variable = 12;
+
+do{
+    int f = 0;
+}while(f <= 8 && h <13);
+
+-var =8;
