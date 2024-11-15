@@ -1,4 +1,3 @@
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -6,7 +5,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Compilador {
-
     // Expresiones regulares
     private static final String IDENTIFIER_REGEX = "[a-zA-Z_][a-zA-Z0-9_]{0,30}";
     private static final String NUMBER_REGEX = "[0-9]+";
@@ -24,39 +22,38 @@ public class Compilador {
     private static final String STRING_REGEX = "\"(([^\"\\\\]|\\\\.)*)\""; // Soporte para cadenas
     private static final String CHAR_REGEX = "'([^'\\\\]|\\\\.){1}'"; // Soporte para un solo caracter
     private static final String SINGLE_LINE_COMMENT_REGEX = "\\/\\/.*"; // Soporte para comentarios unilinea
-    private static final String MULTI_LINE_COMMENT_REGEX = "/\\*([^*]|\\*(?!/))*\\*/"; //Soporte para comentarios multilinea
-    private static final String COMBINED_ASSIGNMENT_REGEX = "(\\+=|-=|\\*=|/=)";
-    private static final String INCREMENT_REGEX = "(\\+\\+|--)";
+    private static final String MULTI_LINE_COMMENT_REGEX = "/\\*([^*]|\\*(?!/))*\\*/"; // Soporte para comentarios
+                                                                                       // multilinea
+    private static final String COMBINED_ASSIGNMENT_REGEX = "(\\+=|-=|\\*=|/=|\\+\\+|--)";
     private static final String OPERATOR_REGEX = "[+\\-*/%^!]+";
     private static final String LOGIC_OPERATOR_REGEX = "(&&|\\|\\|)";
     private static final String BIT_OPERATOR_REGEX = "(&|\\||\\^|~|<<|>>)";
     private static final String COMPARATOR_REGEX = "(==|!=|<|<=|>|>=|<>)"; // Ajustado para comparadores
     private static final String RESERVED_WORDS_REGEX = "(auto|else|long|switch|break|enum|register|typedef|case|extern|return|union|char|float|short|unsigned|const|for|signed|void|continue|goto|sizeof|volatile|default|if|static|while|do|int|struct|_Packed|double)";
-    private static final String PRIMITIVE_TYPES_REGEX = "(int|char|float|double|void)";
-    private static final String DO_REGEX = "(do)";
-    private static final String LOOPS_REGEX = "(while|for)";
-    private static final String CONDITIONS_REGEX = "(if|else|switch)";
-    private static final String CASE_REGEX = "(case)";
+    private static final String DATA_TYPE_REGEX = "(int|char|float|double|void)";
+    private static final String WHILE_REGEX = "while";
+    private static final String IF_REGEX = "if";
+    private static final String CASE_REGEX = "case";
+    private static final String DO_REGEX = "do";
 
-    private static final String INITIALIZE_REGEX = "\\|DT\\|\\|ID\\|(\\|AS\\|(\\|NU\\||\\|ID\\|)(\\|OP\\|(\\|ID\\||\\|NU\\|))*){0,1}(\\|COMA\\|\\|ID\\|(\\|AS\\|(\\|NU\\||\\|ID\\|)(\\|OP\\|(\\|ID\\||\\|NU\\|))*){0,1})*\\|SC\\|"; //WithOut Array Support
-    private static final String ID_ASSIGNMENT_REGEX = "\\|ID\\|((\\|AS\\||\\|AC\\|)(\\|NU\\||\\|ID\\|)(\\|OP\\|(\\|ID\\||\\|NU\\|))*)\\|SC\\|"; //Only simple int support
-    private static final String LOOP_REGEX = "\\|LOOP\\|\\|LP\\|((\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|)(\\|LO\\|(\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|))*){0,1}\\|RP\\|\\|LB\\|";
-    private static final String CONDITION_REGEX = "\\|CON\\|\\|LP\\|((\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|)(\\|LO\\|(\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|))*){0,1}\\|RP\\|\\|LB\\|";
-    private static final String FUNCTION_REGEX = "\\|DT\\|\\|ID\\|\\|LP\\|(\\|DT\\|\\|ID\\|(\\|COMA\\|\\|DT\\|\\|ID\\|)*){0,1}\\|RP\\|\\|LB\\|";
-    private static final String END_REGEX = "\\|RB\\|";
-    private static final String DO_LOOP_REGEX = "\\|DO\\|\\|LB\\|";
-    private static final String END_DO_REGEX = "\\|LOOP\\|\\|LP\\|((\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|)(\\|LO\\|(\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|))*){0,1}\\|RP\\|\\|SC\\|";
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
-    public static boolean error;
-    public static String errorCont;
-    public static int linea = 1;
+    private static final String INITIALIZE_LINE_REGEX = "\\|DT\\|\\|ID\\|((\\|AS\\|(\\|ID\\||\\|NU\\|)){0,1}(\\|OP\\|(\\|ID\\||\\|NU\\|))*)(\\|COMA\\|\\|ID\\|((\\|AS\\|(\\|ID\\||\\|NU\\|)){0,1}(\\|OP\\|(\\|ID\\||\\|NU\\|))*))*\\|SC\\|";
+    private static final String ASSIGN_LINE_REGEX = "\\|ID\\|((\\|AS\\|(\\|ID\\||\\|NU\\|)){1}(\\|OP\\|(\\|ID\\||\\|NU\\|))*)\\|SC\\|";
+    private static final String FUNCTION_LINE_REGEX = "\\|DT\\|\\|ID\\|\\|LP\\|(\\|DT\\|\\|ID\\|){0,1}(\\|COMA\\|\\|DT\\|\\|ID\\|)*\\|RP\\|\\|LB\\|";
+    private static final String IF_LINE_REGEX = "\\|IF\\|\\|LP\\|((\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|)){1}(\\|LO\\|(\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|))*\\|RP\\|\\|LB\\|";
+    private static final String WHILE_LINE_REGEX = "\\|WH\\|\\|LP\\|((\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|)){1}(\\|LO\\|(\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|))*\\|RP\\|\\|LB\\|";
+    private static final String END_LINE_REGEX = "\\|RB\\|";
+    private static final String DO_LINE_REGEX = "\\|DO\\|\\|LB\\|";
+    private static final String DO_END_REGEX = "\\|WH\\|\\|LP\\|((\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|)){1}(\\|LO\\|(\\|ID\\||\\|NU\\|)\\|CO\\|(\\|ID\\||\\|NU\\|))*\\|RP\\|\\|SC\\|";
+    private static final String SEMICOLON_LINE_REGEX = "\\|SC\\|";
 
     public static void main(String[] args) {
         // Ruta del archivo .txt
-        String filePath = "prueba.txt";
+        String filePath = "compiladores\\JAVA C Compiler\\prueba.txt";
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+
             StringBuilder contentBuilder = new StringBuilder();
             String line;
 
@@ -66,12 +63,13 @@ public class Compilador {
             }
 
             String content = contentBuilder.toString();
-            String[] logicalLines = content.split("(?<=[;{}])"); // Divide cada línea lógica por ';'
+            String[] logicalLines = content.split("(?<=[;{}])");// Divide cada línea lógica por ';', aperturas y cerraduras
 
-            System.out.println("");
-            System.out.println("");
+            int linea = 1;
 
             for (String logicalLine : logicalLines) {
+
+                String errorCon;
 
                 logicalLine = logicalLine.trim(); // Quitar espacios
                 if (!logicalLine.isEmpty()) {
@@ -85,142 +83,159 @@ public class Compilador {
                     auxLine = handleStringsAndChars(logicalLine);
                     logicalLine = auxLine;
 
+                    logicalLine = logicalLine.replace("&&", "TEMPAND");
+                    logicalLine = logicalLine.replace("||", "TEMPOR");
+                    logicalLine = logicalLine.replace("==", "TEMPEQUALS");
+                    logicalLine = logicalLine.replace(">=", "TEMPEQG");
+                    logicalLine = logicalLine.replace("<=", "TEMPEQL");
+                    logicalLine = logicalLine.replace("!=", "TEMPNOT");
+                    logicalLine = logicalLine.replace("<>", "TEMPDIFF");
+
                     // Paso 2: Tokeniza la línea normalmente
                     String[] tokens = logicalLine.split("(?<=\\W)|(?=\\W)"); // Separar por símbolos no alfanuméricos
 
-                    StringBuffer lineBuffer = new StringBuffer();
+                    for (int i = 0; i < tokens.length; i++) {
+                        if (tokens[i].equals("TEMPAND")) {
+                            tokens[i] = "&&";
+                        } else if (tokens[i].equals("TEMPOR")) {
+                            tokens[i] = "||";
+                        } else if (tokens[i].equals("TEMPEQUALS")) {
+                            tokens[i] = "==";
+                        } else if (tokens[i].equals("TEMPEQG")) {
+                            tokens[i] = ">=";
+                        } else if (tokens[i].equals("TEMPEQL")) {
+                            tokens[i] = "<=";
+                        } else if (tokens[i].equals("TEMPNOT")) {
+                            tokens[i] = "!=";
+                        } else if (tokens[i].equals("TEMPDIFF")) {
+                            tokens[i] = "<>";
+                        }
+                    }
 
                     System.out.println("");
                     System.out.println("Analizando línea: " + primeLine);
-                    boolean esValido = false;
+                    boolean esValido = true;
                     System.out.print(">>");
 
+                    StringBuffer newLine = new StringBuffer();
+
                     for (String token : tokens) {
-
                         token = token.trim();
-
-                        if (token.isEmpty()) {
+                        if (token.isEmpty())
                             continue; // Ignorar tokens vacíos
-                        }
-                        if (isPrimitiveDataType(token)) {
-                            lineBuffer.append("|DT|");
+
+                        if (isDataType(token)) {
+                            newLine.append("|DT|");
                             esValido = true;
-                        } else if (isCondition(token)) {
-                            lineBuffer.append("|CON|");
+                        } else if (isIf(token)) {
+                            newLine.append("|IF|");
                             esValido = true;
-                        } else if (isCase(token)) {
-                            lineBuffer.append("|CASE|");
-                            esValido = true;
-                        } else if (isDo(token)) {
-                            lineBuffer.append("|DO|");
-                            esValido = true;
-                        } else if (isLoop(token)) {
-                            lineBuffer.append("|LOOP|");
+                        } else if (isWhile(token)) {
+                            newLine.append("|WH|");
                             esValido = true;
                         } else if (isReservedWord(token)) {
-                            lineBuffer.append("|PR|");
+                            newLine.append("|PR|");
                             esValido = true;
                         } else if (isString(token)) {
-                            lineBuffer.append("|STR|");
+                            newLine.append("|STR|");
                             esValido = true;
                         } else if (isChar(token)) {
-                            lineBuffer.append("|CHR|"); // Token reconocido como carácter
+                            newLine.append("|CHR|"); // Token reconocido como carácter
                             esValido = true;
                         } else if (isIdentifier(token)) {
-                            lineBuffer.append("|ID|");
-                            esValido = true;
-                        } else if (isIncrement(token)) {
-                            lineBuffer.append("|IC|");
+                            newLine.append("|ID|");
                             esValido = true;
                         } else if (isCombinedAssignment(token)) {
-                            lineBuffer.append("|AC|");
+                            newLine.append("|AC|");
                             esValido = true;
                         } else if (isAssignment(token)) {
-                            lineBuffer.append("|AS|");
+                            newLine.append("|AS|");
                             esValido = true;
                         } else if (isDigit(token)) {
-                            lineBuffer.append("|NU|");
+                            newLine.append("|NU|");
                             esValido = true;
                         } else if (isOperator(token)) {
-                            lineBuffer.append("|OP|");
+                            newLine.append("|OP|");
                             esValido = true;
                         } else if (isLogicOperator(token)) {
-                            lineBuffer.append("|LO|");
+                            newLine.append("|LO|");
                             esValido = true;
                         } else if (isBitOperator(token)) {
-                            lineBuffer.append("|BO|");
+                            newLine.append("|BO|");
                             esValido = true;
                         } else if (isComparator(token)) {
-                            lineBuffer.append("|CO|");
+                            newLine.append("|CO|");
                             esValido = true;
                         } else if (isLeftParen(token)) {
-                            lineBuffer.append("|LP|");
+                            newLine.append("|LP|");
                             esValido = true;
                         } else if (isRightParen(token)) {
-                            lineBuffer.append("|RP|");
+                            newLine.append("|RP|");
                             esValido = true;
                         } else if (isLeftBrace(token)) {
-                            lineBuffer.append("|LB|");
+                            newLine.append("|LB|");
                             esValido = true;
                         } else if (isRightBrace(token)) {
-                            lineBuffer.append("|RB|");
+                            newLine.append("|RB|");
                             esValido = true;
                         } else if (isLeftBracket(token)) {
-                            lineBuffer.append("|LBR|");
+                            newLine.append("|LBR|");
                             esValido = true;
                         } else if (isRightBracket(token)) {
-                            lineBuffer.append("|RBR|");
+                            newLine.append("|RBR|");
                             esValido = true;
                         } else if (isComa(token)) {
-                            lineBuffer.append("|COMA|");
+                            newLine.append("|COMA|");
                             esValido = true;
                         } else if (isColon(token)) {
-                            lineBuffer.append("|COL|");
+                            newLine.append("|COL|");
                             esValido = true;
                         } else if (isSemicolon(token)) {
-                            lineBuffer.append("|SC|");
+                            newLine.append("|SC|");
                             esValido = true;
                         } else if (isDot(token)) {
-                            lineBuffer.append("|DOT|");
+                            newLine.append("|DOT|");
                             esValido = true;
                         } else {
-                            errorCont = " Token no reconocido: " + token + ".";
-                            throw new compileException("Error en la linea:" + linea + errorCont);
+                            errorCon = "Token no reconocido: " + token;
+                            throw new compilerError("|ERROR|" + errorCon + "En Linea:" + linea);
                         }
                     }
 
-                    if (isInitial(lineBuffer.toString())) {
+                    esValido = false;
+
+                    if (isSemiColonLine(newLine.toString())) {
+                        System.out.println("|WARNING| Linea" + linea +" vacia.");
                         esValido = true;
-                    } else if (isIDAssignment(lineBuffer.toString())){
+                    } else if (isInitialLine(newLine.toString())) {
                         esValido = true;
-                    } else if (isLineLoop(lineBuffer.toString())){
+                    } else if (isAssignLine(newLine.toString())) {
                         esValido = true;
-                    } else if (isLineCondition(lineBuffer.toString())){
+                    } else if (isFunctionLine(newLine.toString())) {
                         esValido = true;
-                    } else if (isFunction(lineBuffer.toString())){
+                    } else if (isIfLine(newLine.toString())) {
                         esValido = true;
-                    } else if (isEnd(lineBuffer.toString())){
+                    } else if (isWhileLine(newLine.toString())) {
                         esValido = true;
-                    } else if (isDoLoop(lineBuffer.toString())){
+                    } else if (isEndLine(newLine.toString())) {
                         esValido = true;
-                    } else if (isEndDo(lineBuffer.toString())){
+                    } else if (isDoLine(newLine.toString())) {
+                        esValido = true;
+                    } else if (isDoEndLine(newLine.toString())) {
                         esValido = true;
                     } else {
-                        errorCont = "Sintaxis Invalida.";
-                        throw new compileException("Error: "+ errorCont +" En la linea:" + linea);
+                        throw new compilerError("|ERROR| Sintaxis erronea. En Linea:" + linea);
                     }
                 }
-
                 linea++;
+            }
 
-                System.out.println("Linea Valida.");
-
-            }           
+            System.out.println("Compilado Exitoso");
 
         } catch (IOException e) {
             e.getMessage();
             e.printStackTrace();
-        } catch (compileException e) {
+        } catch (compilerError e) {
             e.getMessage();
             e.printStackTrace();
         }
@@ -263,25 +278,6 @@ public class Compilador {
     }
 
     // Funciones para reconocer diferentes tipos de tokens
-    public static boolean isPrimitiveDataType(String input) {
-        return Pattern.matches(PRIMITIVE_TYPES_REGEX, input);
-    }
-
-    public static boolean isDo(String input) {
-        return Pattern.matches(DO_REGEX, input);
-    }
-    
-    public static boolean isLoop(String input) {
-        return Pattern.matches(LOOPS_REGEX, input);
-    }
-
-    public static boolean isCondition(String input) {
-        return Pattern.matches(CONDITIONS_REGEX, input);
-    }
-
-    public static boolean isCase(String input) {
-        return Pattern.matches(CASE_REGEX, input);
-    }
 
     public static boolean isIdentifier(String input) {
         return Pattern.matches(IDENTIFIER_REGEX, input);
@@ -297,10 +293,6 @@ public class Compilador {
 
     public static boolean isCombinedAssignment(String input) {
         return Pattern.matches(COMBINED_ASSIGNMENT_REGEX, input);
-    }
-
-    public static boolean isIncrement(String input) {
-        return Pattern.matches(INCREMENT_REGEX, input);
     }
 
     public static boolean isOperator(String input) {
@@ -319,17 +311,43 @@ public class Compilador {
         return Pattern.matches(COMPARATOR_REGEX, input);
     }
 
+    public static boolean isDataType(String input) {
+        return Pattern.matches(DATA_TYPE_REGEX, input);
+    }
+
+    public static boolean isIf(String input) {
+        return Pattern.matches(IF_REGEX, input);
+    }
+
+    public static boolean isCase(String input) {
+        return Pattern.matches(CASE_REGEX, input);
+    }
+
+    public static boolean isWhile(String input) {
+        return Pattern.matches(WHILE_REGEX, input);
+    }
+
+    public static boolean isDo(String input) {
+        return Pattern.matches(DO_REGEX, input);
+    }
+
     public static boolean isReservedWord(String input) {
         return Pattern.matches(RESERVED_WORDS_REGEX, input);
     }
 
     public static boolean isString(String input) {
-        return input.equals("STR");
+        if (input.equals("STR"))
+            return true;
+        else
+            return false; // Reconoce cadenas
     }
 
     public static boolean isChar(String input) {
-        return input.equals("CHR"); 
-    }        
+        if (input.equals("CHR"))
+            return true;
+        else
+            return false; // Reconoce caracteres
+    }
 
     public static boolean isLeftParen(String input) {
         return Pattern.matches(LEFT_PAREN_REGEX, input);
@@ -363,45 +381,49 @@ public class Compilador {
         return Pattern.matches(DOT_REGEX, input);
     }
 
-    public static boolean isColon(String input) {
-        return Pattern.matches(COLON_REGEX, input);
-    }
-
     public static boolean isSemicolon(String input) {
         return Pattern.matches(SEMICOLON_REGEX, input);
     }
 
-//-------------------------------------------------------------------------------------------------
-
-    public static boolean isInitial(String input){
-        return Pattern.matches(INITIALIZE_REGEX, input);
+    public static boolean isColon(String input) {
+        return Pattern.matches(COLON_REGEX, input);
     }
 
-    public static boolean isIDAssignment(String input){
-        return Pattern.matches(ID_ASSIGNMENT_REGEX, input);
+    // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    public static boolean isSemiColonLine(String input) {
+        return Pattern.matches(SEMICOLON_LINE_REGEX, input);
+    }
+    
+    public static boolean isAssignLine(String input) {
+        return Pattern.matches(ASSIGN_LINE_REGEX, input);
     }
 
-    public static boolean isLineLoop(String input){
-        return Pattern.matches(LOOP_REGEX, input);
+    public static boolean isInitialLine(String input) {
+        return Pattern.matches(INITIALIZE_LINE_REGEX, input);
     }
 
-    public static boolean isLineCondition(String input){
-        return Pattern.matches(CONDITION_REGEX, input);
+    public static boolean isFunctionLine(String input) {
+        return Pattern.matches(FUNCTION_LINE_REGEX, input);
     }
 
-    public static boolean isFunction(String input){
-        return Pattern.matches(FUNCTION_REGEX, input);
+    public static boolean isIfLine(String input) {
+        return Pattern.matches(IF_LINE_REGEX, input);
     }
 
-    public static boolean isEnd(String input){
-        return Pattern.matches(END_REGEX, input);
+    public static boolean isWhileLine(String input) {
+        return Pattern.matches(WHILE_LINE_REGEX, input);
     }
 
-    public static boolean isDoLoop(String input){
-        return Pattern.matches(DO_LOOP_REGEX, input);
+    public static boolean isEndLine(String input) {
+        return Pattern.matches(END_LINE_REGEX, input);
     }
 
-    public static boolean isEndDo(String input){
-        return Pattern.matches(END_DO_REGEX, input);
+    public static boolean isDoLine(String input) {
+        return Pattern.matches(DO_LINE_REGEX, input);
+    }
+
+    public static boolean isDoEndLine(String input) {
+        return Pattern.matches(DO_END_REGEX, input);
     }
 }
