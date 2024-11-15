@@ -13,5 +13,3 @@ variable = 12;
 do{
     int f = 0;
 }while(f <= 8 && h <13);
-
--var =8;

@@ -4,20 +4,22 @@ use std::path::Path;
 use regex::Regex;
 
 fn main() -> io::Result<()> {
-    // Abrir el archivo .txt
-    let path = "archivo.txt"; // Cambia esto por la ruta de tu archivo
+    
+    let path = "prueba.txt"; // Ubicacion del archivo de texto
     let file = File::open(path)?;
 
-    // Expresión regular para validar los caracteres en cada línea
-    let regex_caracteres = Regex::new(r"^[ a-zA-Z0-9_+*\(\)\[\]#&/|=<>%\:!]+;$").unwrap();
-
-    // Expresión regular para identificar palabras reservadas
-    let regex_reservadas = Regex::new(
-        r"\b(auto|else|long|switch|break|enum|register|typedef|case|extern|return|union|char|float|short|unsigned|const|for|signed|void|continue|goto|sizeof|volatile|default|if|static|while|do|int|struct|_Packed|double)\b"
+    
+    let regex_caracteres = Regex::new(
+        r"^[ a-zA-Z0-9_+*\(\)\[\]#&/|=<>%\:!]+;$" // Expresión regular para validar los caracteres en cada línea
     ).unwrap();
 
-    // Expresión regular para validar identificadores
-    let regex_identificadores = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]{0,30}$").unwrap();
+    let regex_reservadas = Regex::new(
+        r"\b(auto|else|long|switch|break|enum|register|typedef|case|extern|return|union|char|float|short|unsigned|const|for|signed|void|continue|goto|sizeof|volatile|default|if|static|while|do|int|struct|_Packed|double)\b" // Expresión regular para identificar palabras reservadas
+    ).unwrap();
+
+    let regex_identificadores = Regex::new(
+        r"^[a-zA-Z_][a-zA-Z0-9_]{0,30}$" // Expresión regular para validar identificadores
+    ).unwrap();
 
     // Leer el archivo línea por línea
     if let Ok(lines) = read_lines(path) {
@@ -29,10 +31,10 @@ fn main() -> io::Result<()> {
                 // Procesar cuando encontramos un ';' al final de la línea acumulada
                 if buffer.contains(';') {
                     // Clonar el buffer antes de procesar
-                    let buffer_clonado = buffer.clone();
+                    let buffer_cloned = buffer.clone();
                     
                     // Separa por el ';' para procesar cada "línea lógica" de código
-                    let partes: Vec<&str> = buffer_clonado.split(';').collect();
+                    let partes: Vec<&str> = buffer_cloned.split(';').collect();
                     
                     // Extraemos la última parte que puede estar incompleta y la volvemos a poner en el buffer
                     buffer = partes.last().unwrap_or(&"").to_string();
@@ -92,7 +94,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-// Función para leer las líneas de un archivo
+// Función para leer las líneas del archivo
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
     P: AsRef<Path>,

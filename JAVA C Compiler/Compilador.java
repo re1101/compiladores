@@ -22,8 +22,7 @@ public class Compilador {
     private static final String STRING_REGEX = "\"(([^\"\\\\]|\\\\.)*)\""; // Soporte para cadenas
     private static final String CHAR_REGEX = "'([^'\\\\]|\\\\.){1}'"; // Soporte para un solo caracter
     private static final String SINGLE_LINE_COMMENT_REGEX = "\\/\\/.*"; // Soporte para comentarios unilinea
-    private static final String MULTI_LINE_COMMENT_REGEX = "/\\*([^*]|\\*(?!/))*\\*/"; // Soporte para comentarios
-                                                                                       // multilinea
+    private static final String MULTI_LINE_COMMENT_REGEX = "/\\*([^*]|\\*(?!/))*\\*/"; // Soporte para comentarios multilinea
     private static final String COMBINED_ASSIGNMENT_REGEX = "(\\+=|-=|\\*=|/=|\\+\\+|--)";
     private static final String OPERATOR_REGEX = "[+\\-*/%^!]+";
     private static final String LOGIC_OPERATOR_REGEX = "(&&|\\|\\|)";
@@ -50,7 +49,7 @@ public class Compilador {
 
     public static void main(String[] args) {
         // Ruta del archivo .txt
-        String filePath = "compiladores\\JAVA C Compiler\\prueba.txt";
+        String filePath = "prueba.txt";
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
 
@@ -67,8 +66,11 @@ public class Compilador {
 
             int linea = 1;
 
+            boolean esValido = false;
+
             for (String logicalLine : logicalLines) {
 
+                esValido = false;
                 String errorCon;
 
                 logicalLine = logicalLine.trim(); // Quitar espacios
@@ -95,26 +97,35 @@ public class Compilador {
                     String[] tokens = logicalLine.split("(?<=\\W)|(?=\\W)"); // Separar por símbolos no alfanuméricos
 
                     for (int i = 0; i < tokens.length; i++) {
-                        if (tokens[i].equals("TEMPAND")) {
-                            tokens[i] = "&&";
-                        } else if (tokens[i].equals("TEMPOR")) {
-                            tokens[i] = "||";
-                        } else if (tokens[i].equals("TEMPEQUALS")) {
-                            tokens[i] = "==";
-                        } else if (tokens[i].equals("TEMPEQG")) {
-                            tokens[i] = ">=";
-                        } else if (tokens[i].equals("TEMPEQL")) {
-                            tokens[i] = "<=";
-                        } else if (tokens[i].equals("TEMPNOT")) {
-                            tokens[i] = "!=";
-                        } else if (tokens[i].equals("TEMPDIFF")) {
-                            tokens[i] = "<>";
+                        switch (tokens[i]) {
+                            case "TEMPAND":
+                                tokens[i] = "&&";
+                                break;
+                            case "TEMPOR":
+                                tokens[i] = "||";
+                                break;
+                            case "TEMPEQUALS":
+                                tokens[i] = "==";
+                                break;
+                            case "TEMPEQG":
+                                tokens[i] = ">=";
+                                break;
+                            case "TEMPEQL":
+                                tokens[i] = "<=";
+                                break;
+                            case "TEMPNOT":
+                                tokens[i] = "!=";
+                                break;
+                            case "TEMPDIFF":
+                                tokens[i] = "<>";
+                                break;
+                            default:
+                                break;
                         }
                     }
 
                     System.out.println("");
                     System.out.println("Analizando línea: " + primeLine);
-                    boolean esValido = true;
                     System.out.print(">>");
 
                     StringBuffer newLine = new StringBuffer();
@@ -123,12 +134,14 @@ public class Compilador {
                         token = token.trim();
                         if (token.isEmpty())
                             continue; // Ignorar tokens vacíos
-
                         if (isDataType(token)) {
                             newLine.append("|DT|");
                             esValido = true;
                         } else if (isIf(token)) {
                             newLine.append("|IF|");
+                            esValido = true;
+                        } else if (isDo(token)) {
+                            newLine.append("|DO|");
                             esValido = true;
                         } else if (isWhile(token)) {
                             newLine.append("|WH|");
@@ -226,19 +239,35 @@ public class Compilador {
                     } else {
                         throw new compilerError("|ERROR| Sintaxis erronea. En Linea:" + linea);
                     }
-                }
-                linea++;
-            }
 
-            System.out.println("Compilado Exitoso");
+                    if(esValido)
+                        System.out.print("Linea Valida");
+                    else
+                        throw new compilerError("|ERROR| Error desconocido. En Linea:" + linea);
+
+                } else {
+                    esValido = true;
+                }
+
+                linea++;
+
+            }
+            if(esValido)
+                System.out.println("Compilado Exitoso");
+            else
+                throw new compilerError("|ERROR| Error desconocido en archivo.");
+                
 
         } catch (IOException e) {
             e.getMessage();
             e.printStackTrace();
         } catch (compilerError e) {
-            e.getMessage();
-            e.printStackTrace();
+            System.out.println(e.getMessage());
+            //e.printStackTrace();
         }
+
+        System.out.println("FIN DEL PROGRAMA");
+
     }
 
     // Paso 1: Reemplaza las cadenas y caracteres por marcadores
