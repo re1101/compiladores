@@ -4,7 +4,7 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() -> io::Result<()> {
-    let path = "prueba.txt"; // Ubicacion del archivo de texto
+    let path = "../prueba.txt"; // Ubicacion del archivo de texto
     let file = File::open(path)?;
 
     let regex_caracteres = Regex::new(
@@ -60,7 +60,7 @@ fn main() -> io::Result<()> {
                                     println!("Token desconocido: {}", token);
                                 }
                             }
-                        }
+                        }   
                         println!("Los caracteres NO pertenecen al lenguaje C.");
                     }
                 }
