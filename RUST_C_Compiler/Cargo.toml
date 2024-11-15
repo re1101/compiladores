@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 ferris-says = "0.3.1"
+ferris_print = "0.1.0"
 regex = "1.11.1"
