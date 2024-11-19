@@ -41,7 +41,7 @@ fn main() -> io::Result<()> {
         // Buscar coincidencias en la cadena
         let partes: Vec<&str> = re.find_iter(&linesBuffer).map(|m| m.as_str()).collect();
 
-        println!("{:?}", partes);
+        println!("DEBUG: partes => {:?}", partes);
     }
 
     Ok(())
