@@ -37,7 +37,7 @@ fn main() -> io::Result<()> {
         }
 
         // Expresión regular para capturar palabras con sus delimitadores
-        let re = Regex::new(r"[^{\s};]+(?:\s[^{\s};]+)*[{};]?").unwrap();
+        let re = Regex::new(r"[^\s{};]+(?:\s[^\s{};]+)*[{};]?|[{};]").unwrap();
         // Buscar coincidencias en la cadena
         let partes: Vec<&str> = re.find_iter(&linesBuffer).map(|m| m.as_str()).collect();
 
