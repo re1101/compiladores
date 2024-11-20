@@ -43,7 +43,7 @@ fn main() -> io::Result<()> {
 
         println!("DEBUG: logicalLines => {:?}", logicalLines);
 
-        for mut logicalLine in logicalLines {
+        for logicalLine in logicalLines {
             println!("DEBUG: logicalLine => {:?}", logicalLine);
 
             let logicalLine = &logicalLine.replace("&&", "TEMPAND");
@@ -59,20 +59,27 @@ fn main() -> io::Result<()> {
             // Expresión regular para capturar palabras, simbolos y delimitadores
             let reT = Regex::new(r"\w+|[^\w\s]").unwrap();
             // Buscar coincidencias en la cadena
-            let mut tokens: Vec<&str> = reT.find_iter(&logicalLine).map(|m| m.as_str()).collect();
+            let mut tempTokens: Vec<&str> = reT.find_iter(&logicalLine).map(|m| m.as_str()).collect();
+
+            println!("DEBUG: tempTokens => {:?}", tempTokens);
 
             let mut i: usize = 0;
+            let mut tokens: Vec<&str> = Vec::new();
 
-            for tempToken in tokens {
-                tokens[i] = match tempToken {
+            for tempToken in tempTokens {
+
+                println!("DEBUG: tempToken => {:?}", tempToken);
+
+                tokens.push(match tempToken {
                     "TEMPAND" => "&&",
                     "TEMPOR" => "||",
                     "TEMPEQUALS" => "==",
                     "TEMPEQG" => ">=",
                     "TEMPEQL" => "<=",
                     "TEMPNOT" => "!=",
-                    "TEMPDIFF" => "<>"
-                };
+                    "TEMPDIFF" => "<>",
+                    _ => tempToken
+                });
 
                 i += 1;
             }
