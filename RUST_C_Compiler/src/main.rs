@@ -39,9 +39,20 @@ fn main() -> io::Result<()> {
         // Expresión regular para capturar palabras con sus delimitadores
         let re = Regex::new(r"[^\s{};]+(?:\s[^\s{};]+)*[{};]?|[{};]").unwrap();
         // Buscar coincidencias en la cadena
-        let partes: Vec<&str> = re.find_iter(&linesBuffer).map(|m| m.as_str()).collect();
+        let logicalLines: Vec<&str> = re.find_iter(&linesBuffer).map(|m| m.as_str()).collect();
 
-        println!("DEBUG: partes => {:?}", partes);
+        println!("DEBUG: logicalLines => {:?}", logicalLines);
+
+        for logicalLine in logicalLines {
+            println!("DEBUG: logicalLine => {:?}", logicalLine);
+
+            // Expresión regular para capturar palabras, simbolos y delimitadores
+            // NOTE ON: _let reT = Regex::new(r"(?<=\\W)|(?=\\W)").unwrap();_ LOOK-AROUND is not supported, must find a workaround
+            // Buscar coincidencias en la cadena
+            let tokens: Vec<&str> = reT.find_iter(&logicalLine).map(|m| m.as_str()).collect();
+
+            println!("DEBUG: tokens => {:?}", tokens);
+        }
     }
 
     Ok(())
