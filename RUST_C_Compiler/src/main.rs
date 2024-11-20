@@ -43,6 +43,8 @@ fn main() -> io::Result<()> {
 
         //println!("DEBUG: logicalLines => {:?}", logicalLines);
 
+        let line: u16 = 0;
+
         for logicalLine in logicalLines {
             //println!("DEBUG: logicalLine => {:?}", logicalLine);
 
@@ -85,6 +87,21 @@ fn main() -> io::Result<()> {
             }
 
             println!("DEBUG: tokens => {:?}", tokens);
+
+            let mut newLine: Vec<&str> = Vec::new();
+
+            for token in tokens {
+                let family: &str;
+
+                //TODO token validation
+
+                let isFamilyEmpty = match !family.is_empty() {
+                    TRUE => newLine.push(family),
+                    FALSE => {let e = format!("Sintaxis erronea en linea: {}", line); return Err(e)}
+                };
+            }
+
+            line += 1;
         }
     }
 
