@@ -27,12 +27,12 @@ fn main() -> io::Result<()> {
     // Leer el archivo línea por línea
     if let Ok(lines) = read_lines(path) {
         for line in lines {
-            println!("DEBUG: Line => {:?}", line);
+            //println!("DEBUG: Line => {:?}", line);
 
             if let Ok(line) = line {
                 linesBuffer.push_str(&line); // Agrega la línea al buffer
 
-                println!("DEBUG: linesBuffer => {:?}", linesBuffer);
+                //println!("DEBUG: linesBuffer => {:?}", linesBuffer);
             }
         }
 
@@ -41,10 +41,10 @@ fn main() -> io::Result<()> {
         // Buscar coincidencias en la cadena
         let logicalLines: Vec<&str> = re.find_iter(&linesBuffer).map(|m| m.as_str()).collect();
 
-        println!("DEBUG: logicalLines => {:?}", logicalLines);
+        //println!("DEBUG: logicalLines => {:?}", logicalLines);
 
         for logicalLine in logicalLines {
-            println!("DEBUG: logicalLine => {:?}", logicalLine);
+            //println!("DEBUG: logicalLine => {:?}", logicalLine);
 
             let logicalLine = &logicalLine.replace("&&", "TEMPAND");
             let logicalLine = &logicalLine.replace("||", "TEMPOR");
@@ -54,21 +54,21 @@ fn main() -> io::Result<()> {
             let logicalLine = &logicalLine.replace("!=", "TEMPNOT");
             let logicalLine = &logicalLine.replace("<>", "TEMPDIFF");
 
-            println!("DEBUG: first replace logicalLine => {:?}", logicalLine);
+            //println!("DEBUG: first replace logicalLine => {:?}", logicalLine);
 
             // Expresión regular para capturar palabras, simbolos y delimitadores
             let reT = Regex::new(r"\w+|[^\w\s]").unwrap();
             // Buscar coincidencias en la cadena
             let mut tempTokens: Vec<&str> = reT.find_iter(&logicalLine).map(|m| m.as_str()).collect();
 
-            println!("DEBUG: tempTokens => {:?}", tempTokens);
+            //println!("DEBUG: tempTokens => {:?}", tempTokens);
 
             let mut i: usize = 0;
             let mut tokens: Vec<&str> = Vec::new();
 
             for tempToken in tempTokens {
 
-                println!("DEBUG: tempToken => {:?}", tempToken);
+                //println!("DEBUG: tempToken => {:?}", tempToken);
 
                 tokens.push(match tempToken {
                     "TEMPAND" => "&&",
