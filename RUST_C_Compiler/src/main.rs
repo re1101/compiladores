@@ -1,7 +1,31 @@
 use regex::Regex;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+use std::{fs::File, fmt, error::Error, io::{self, BufRead},path::Path};
+
+#[derive(Debug)]
+enum CompilerError {
+    OpenError(std::io::Error),
+    InvalidSyntax(u16),
+    InvalidToken(String, u16)
+}
+
+impl fmt::Display for CompilerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CompilerError::OpenError(err) => write!(f, "Captured Underlying Error: {}", err),
+            CompilerError::InvalidSyntax(line) => write!(f, "Invalid syntax at line: {}", line),
+            CompilerError::InvalidToken(token,line) => write!(f, "Invalid token \"{}\" at line: {}", token, line)
+        }
+    }
+}
+
+impl Error for CompilerError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            CompilerError::OpenError(err) => Some(err),
+            _ => None,
+        }
+    }
+}
 
 fn main() -> io::Result<()> {
     let path = "../prueba.txt"; // Ubicacion del archivo de texto
@@ -43,7 +67,7 @@ fn main() -> io::Result<()> {
 
         //println!("DEBUG: logicalLines => {:?}", logicalLines);
 
-        let line: u16 = 0;
+        let mut currentLine: u16 = 0;
 
         for logicalLine in logicalLines {
             //println!("DEBUG: logicalLine => {:?}", logicalLine);
@@ -61,7 +85,8 @@ fn main() -> io::Result<()> {
             // Expresión regular para capturar palabras, simbolos y delimitadores
             let reT = Regex::new(r"\w+|[^\w\s]").unwrap();
             // Buscar coincidencias en la cadena
-            let mut tempTokens: Vec<&str> = reT.find_iter(&logicalLine).map(|m| m.as_str()).collect();
+            let tempTokens: Vec<&str> =
+                reT.find_iter(&logicalLine).map(|m| m.as_str()).collect();
 
             //println!("DEBUG: tempTokens => {:?}", tempTokens);
 
@@ -69,7 +94,6 @@ fn main() -> io::Result<()> {
             let mut tokens: Vec<&str> = Vec::new();
 
             for tempToken in tempTokens {
-
                 //println!("DEBUG: tempToken => {:?}", tempToken);
 
                 tokens.push(match tempToken {
@@ -80,28 +104,31 @@ fn main() -> io::Result<()> {
                     "TEMPEQL" => "<=",
                     "TEMPNOT" => "!=",
                     "TEMPDIFF" => "<>",
-                    _ => tempToken
+                    _ => tempToken,
                 });
 
                 i += 1;
             }
 
-            println!("DEBUG: tokens => {:?}", tokens);
+            //println!("DEBUG: tokens => {:?}", tokens);
 
             let mut newLine: Vec<&str> = Vec::new();
 
             for token in tokens {
-                let family: &str;
+                let mut families: Vec<&str> = Vec::new(); //Temporary Assignment
 
-                //TODO token validation
+                //TODO replace token with it's family
 
-                let isFamilyEmpty = match !family.is_empty() {
-                    TRUE => newLine.push(family),
-                    FALSE => {let e = format!("Sintaxis erronea en linea: {}", line); return Err(e)}
-                };
+                println!("DEBUG: token => {:?}", token);
+
+                families.push( match replace_tokens(token, currentLine){
+                    Ok(val) => val,
+                    Err(e) => panic!("|ERROR|: ", e)
+                }
+            }
             }
 
-            line += 1;
+            currentLine += 1;
         }
     }
 
@@ -115,4 +142,20 @@ where
 {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
+}
+
+fn replace_tokens( token:&str, line: u16 ) -> Result< &str, CompilerError >{
+    let mut family: &str;
+
+    family = match token {
+       "" => "",
+       _ => return Err(CompilerError::InvalidToken(token.to_string(), line))
+    };
+
+    Ok(family)
+}
+
+fn check_syntax() -> Result<Vec<&str>, CompilerError>{
+    Ok(families)
+    Err()
 }
