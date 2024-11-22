@@ -193,13 +193,11 @@ fn replace_tokens(token: &str, line: u16) -> Result<&str, CompilerError> {
     
     let mut family: &str = "";
 
-    println!("DEBUG: token => {}", token);
-
     for (regexFam, regex) in regexMap {
         match regex {
             Ok(re) => if re.is_match(token) {
                 family = regexFam;
-                println!("DEBUG: family => {}", family);
+                //println!("DEBUG: family => {}", family);
                 break;
             },
             Err(e) => return Err(CompilerError::RegexError(e)),
