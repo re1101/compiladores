@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use regex::Regex;
 use std::{
     error::Error,
@@ -7,6 +9,8 @@ use std::{
     path::Path,
     collections::BTreeMap,
 };
+
+#[allow(unused_imports)]
 use ferris_says::say;
 
 #[macro_use]
@@ -94,7 +98,6 @@ fn main() -> Result<(), CompilerError> {
 
             //println!("DEBUG: tempTokens => {:?}", tempTokens);
 
-            let mut i: usize = 0;
             let mut tokens: Vec<&str> = Vec::new();
 
             for tempToken in tempTokens {
@@ -110,8 +113,6 @@ fn main() -> Result<(), CompilerError> {
                     "TEMPDIFF" => "<>",
                     _ => tempToken,
                 });
-
-                i += 1;
             }
 
             //println!("DEBUG: tokens => {:?}", tokens);
@@ -129,11 +130,14 @@ fn main() -> Result<(), CompilerError> {
                 });
             }
 
-            let mut newLine: String = families.into_iter().collect();
+            let newLine: String = families.into_iter().collect();
 
             println!("DEBUG: Families Line => {:?}", newLine);
 
-            println!("{:#?}", check_syntax(&newLine, currentLine));
+            match check_syntax(&newLine, currentLine){
+                Ok(val) => print!("{}", val),
+                Err(e) => return Err( e ),
+            };
 
             currentLine += 1;
         }
