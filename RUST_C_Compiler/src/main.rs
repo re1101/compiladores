@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
 
+use indexmap::indexmap;
 use regex::Regex;
 use std::{
+    collections::BTreeMap,
     error::Error,
     fmt,
     fs::File,
     io::{self, BufRead},
     path::Path,
-    collections::BTreeMap,
 };
 
 #[allow(unused_imports)]
@@ -42,7 +43,6 @@ impl Error for CompilerError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             CompilerError::OpenError(err) => Some(err),
-            CompilerError::RegexError(err) => Some(err),
             _ => None,
         }
     }
@@ -52,7 +52,7 @@ fn main() -> Result<(), CompilerError> {
     let path = "../prueba.txt"; // Ubicacion del archivo de texto
     let _file = match File::open(path) {
         Ok(file) => file,
-        Err(e) => return Err(CompilerError::OpenError(e)), 
+        Err(e) => return Err(CompilerError::OpenError(e)),
     };
 
     let mut linesBuffer = String::new();
@@ -60,12 +60,8 @@ fn main() -> Result<(), CompilerError> {
     // Leer el archivo línea por línea
     if let Ok(lines) = read_lines(path) {
         for line in lines {
-            //println!("DEBUG: Line => {:?}", line);
-
             if let Ok(line) = line {
                 linesBuffer.push_str(&line); // Agrega la línea al buffer
-
-                //println!("DEBUG: linesBuffer => {:?}", linesBuffer);
             }
         }
 
@@ -74,20 +70,16 @@ fn main() -> Result<(), CompilerError> {
         // Buscar coincidencias en la cadena
         let logicalLines: Vec<&str> = re.find_iter(&linesBuffer).map(|m| m.as_str()).collect();
 
-        //println!("DEBUG: logicalLines => {:?}", logicalLines);
-
         let mut currentLine: u16 = 0;
 
         for logicalLine in logicalLines {
-            //println!("DEBUG: logicalLine => {:?}", logicalLine);
-
-            let logicalLine = &logicalLine.replace("&&", "TEMPAND");
-            let logicalLine = &logicalLine.replace("||", "TEMPOR");
-            let logicalLine = &logicalLine.replace("==", "TEMPEQUALS");
-            let logicalLine = &logicalLine.replace(">=", "TEMPEQG");
-            let logicalLine = &logicalLine.replace("<=", "TEMPEQL");
-            let logicalLine = &logicalLine.replace("!=", "TEMPNOT");
-            let logicalLine = &logicalLine.replace("<>", "TEMPDIFF");
+            let logicalLine = &logicalLine.replace("&&", " TEMPAND");
+            let logicalLine = &logicalLine.replace("||", " TEMPOR");
+            let logicalLine = &logicalLine.replace("==", " TEMPEQUALS");
+            let logicalLine = &logicalLine.replace(">=", " TEMPEQG");
+            let logicalLine = &logicalLine.replace("<=", " TEMPEQL");
+            let logicalLine = &logicalLine.replace("!=", " TEMPNOT");
+            let logicalLine = &logicalLine.replace("<>", " TEMPDIFF");
 
             //println!("DEBUG: first replace logicalLine => {:?}", logicalLine);
 
@@ -96,13 +88,9 @@ fn main() -> Result<(), CompilerError> {
             // Buscar coincidencias en la cadena
             let tempTokens: Vec<&str> = reT.find_iter(&logicalLine).map(|m| m.as_str()).collect();
 
-            //println!("DEBUG: tempTokens => {:?}", tempTokens);
-
             let mut tokens: Vec<&str> = Vec::new();
 
             for tempToken in tempTokens {
-                //println!("DEBUG: tempToken => {:?}", tempToken);
-
                 tokens.push(match tempToken {
                     "TEMPAND" => "&&",
                     "TEMPOR" => "||",
@@ -115,28 +103,20 @@ fn main() -> Result<(), CompilerError> {
                 });
             }
 
-            //println!("DEBUG: tokens => {:?}", tokens);
-
             let mut families: Vec<&str> = Vec::new();
 
             for token in tokens {
-                //Temporary Assignment
-
-                //println!("DEBUG: token => {:?}", token);
-
                 families.push(match replace_tokens(token, currentLine) {
                     Ok(val) => val,
-                    Err(e) => return Err( e ) ,
+                    Err(e) => return Err(e),
                 });
             }
 
             let newLine: String = families.into_iter().collect();
 
-            println!("DEBUG: Families Line => {:?}", newLine);
-
-            match check_syntax(&newLine, currentLine){
-                Ok(val) => print!("{}", val),
-                Err(e) => return Err( e ),
+            match check_syntax(&newLine, currentLine) {
+                Ok(val) => println!("{}", val),
+                Err(e) => return Err(e),
             };
 
             currentLine += 1;
@@ -158,54 +138,55 @@ where
 }
 
 fn replace_tokens(token: &str, line: u16) -> Result<&str, CompilerError> {
-    let mut regexMap = BTreeMap::new();
+    let regexMap = indexmap! (
+    "|WH|" => Regex::new(r"^(while)$"),
+    "|IF|" => Regex::new(r"^(if)$"),
+    "|CASE|" => Regex::new(r"^(case)$"),
+    "|DO|" => Regex::new(r"^(do)$"),
+    "|DT|" => Regex::new(r"^(int|char|float|double|void)$"),
+    "|RW|" => Regex::new( r"^(auto|else|long|switch|break|enum|register|typedef|case|extern|return|union|char|float|short|unsigned|const|for|signed|void|continue|goto|sizeof|volatile|default|if|static|while|do|int|struct|_Packed|double)$"),
+    "|ID|" => Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]{0,30}$"),
+    "|NU|" => Regex::new(r"^[0-9]+$"),
+    "|CA|" => Regex::new(r"^(\+=|-=|\*=|/=|\+\+|--)$"),
+    "|OP|" => Regex::new(r"^[+\-*/%^!]$"),
+    "|LO|" => Regex::new(r"^(&&|\|\|)$$"),
+    "|BO|" => Regex::new(r"^(&|\||\^|~|<<|>>)$"),
+    "|CO|" => Regex::new(r"^(==|!=|<|<=|>|>=|<>)$"),
+    "|AS|" => Regex::new(r"^=$"),
+    "|LP|" => Regex::new(r"^\($"),
+    "|RP|" => Regex::new(r"^\)$"),
+    "|LB|" => Regex::new(r"^\{$"),
+    "|RB|" => Regex::new(r"^\}$"),
+    "|LBR|" => Regex::new(r"^\[$"),
+    "|RBR|" => Regex::new(r"^\]$"),
+    "|COMA|" => Regex::new(r"^,$"),
+    "|DOT|" => Regex::new(r"^\.$"),
+    "|SC|" => Regex::new(r"^;$"),
+    "|COL|" => Regex::new(r"^:$"),
+    );
 
-    regexMap.insert( "|WH|" , Regex::new( r"while"));
-    regexMap.insert( "|IF|" , Regex::new( r"if"));
-    regexMap.insert( "|CASE|" , Regex::new( r"case"));
-    regexMap.insert( "|DO|" , Regex::new( r"do"));
-    regexMap.insert( "|DT|" , Regex::new( r"(int|char|float|double|void)"));
-    regexMap.insert( "|RW|" , Regex::new( r"(auto|else|long|switch|break|enum|register|typedef|case|extern|return|union|char|float|short|unsigned|const|for|signed|void|continue|goto|sizeof|volatile|default|if|static|while|do|int|struct|_Packed|double)"));
-    regexMap.insert( "|ID|" , Regex::new( r"[a-zA-Z_][a-zA-Z0-9_]{0,30}"));
-    regexMap.insert( "|NUM|" , Regex::new( r"[0-9]+"));
-    regexMap.insert( "|CA|" , Regex::new( r"(\+=|-=|\*=|/=|\+\+|--)"));
-    regexMap.insert( "|CA|" , Regex::new( r"(\+=|-=|\*=|/=|\+\+|--)"));
-    regexMap.insert( "|LO|" , Regex::new( r"(&&|\|\|)"));
-    regexMap.insert( "|BO|" , Regex::new( r"(&|\||\^|~|<<|>>)"));
-    regexMap.insert( "|COM|" , Regex::new( r"(==|!=|<|<=|>|>=|<>)"));
-    regexMap.insert( "|AS|" , Regex::new( r"="));
-    regexMap.insert( "|LP|" , Regex::new( r"\("));
-    regexMap.insert( "|RP|" , Regex::new( r"\)"));
-    regexMap.insert( "|LB|" , Regex::new( r"\{"));
-    regexMap.insert( "|RB|" , Regex::new( r"\}"));
-    regexMap.insert( "|LBR|" , Regex::new( r"\["));
-    regexMap.insert( "|RBR|" , Regex::new( r"\]"));
-    regexMap.insert( "|COMA|" , Regex::new( r","));
-    regexMap.insert( "|DOT|" , Regex::new( r"\."));
-    regexMap.insert( "|SC|" ,Regex::new( r";"));
-    regexMap.insert( "|COL|" , Regex::new( r":"));
-    
     //regexMap.insert( "|STR|" , Regex::new( r#"(([^"\\]|\\.)*)"#)); // Soporte para cadenas
     //regexMap.insert( "|CHR|" , Regex::new( r"'([^'\\]|\\.){1}'")); // Soporte para un solo caracter
-    
+
     //regexMap.insert( SINGLE_LINE_COMMENT_REGEX , Regex::new( r"\\/\\/.*")); // Soporte para comentarios unilinea
     //regexMap.insert( MULTI_LINE_COMMENT_REGEX , Regex::new( r"/\\*([^*]|\\*(?!/))*\\*/")); // Soporte para comentarios multilinea
-    
+
     let mut family: &str = "";
 
     for (regexFam, regex) in regexMap {
         match regex {
-            Ok(re) => if re.is_match(token) {
-                family = regexFam;
-                //println!("DEBUG: family => {}", family);
-                break;
-            },
+            Ok(re) => {
+                if re.is_match(token) {
+                    family = regexFam;
+                    break;
+                }
+            }
             Err(e) => return Err(CompilerError::RegexError(e)),
         }
     }
 
-    if family.is_empty(){
-        return Err( CompilerError::InvalidToken( token.to_owned(), line ) )
+    if family.is_empty() {
+        return Err(CompilerError::InvalidToken(token.to_owned(), line));
     }
 
     Ok(family)
@@ -214,20 +195,38 @@ fn replace_tokens(token: &str, line: u16) -> Result<&str, CompilerError> {
 fn check_syntax(line: &str, lineN: u16) -> Result<String, CompilerError> {
     let mut regexMap = BTreeMap::new();
 
-    regexMap.insert("RESERVED_WORDS", Regex::new(
-        r"\b(auto|else|long|switch|break|enum|register|typedef|case|extern|return|union|char|float|short|unsigned|const|for|signed|void|continue|goto|sizeof|volatile|default|if|static|while|do|int|struct|_Packed|double)\b"
-    ).unwrap());
+    regexMap.insert("INITIALIZATION_LINE", Regex::new(
+        r"^\|DT\|\|ID\|((\|AS\|(\|ID\||\|NU\|)){0,1}(\|OP\|(\|ID\||\|NU\|))*)(\|COMA\|\|ID\|((\|AS\|(\|ID\||\|NU\|)){0,1}(\|OP\|(\|ID\||\|NU\|))*))*\|SC\|$"
+    ));
     regexMap.insert(
-        "IDENTIFIER",
-        Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]{0,30}$").unwrap(),
+        "ASSIGNATION_LINE",
+        Regex::new(r"^\|ID\|((\|AS\|(\|ID\||\|NU\|)){1}(\|OP\|(\|ID\||\|NU\|))*)\|SC\|$"),
     );
-    regexMap.insert("NUMBER", Regex::new(r"[0-9]+").unwrap());
+    regexMap.insert(
+        "FUNCTION_LINE",
+        Regex::new(r"^\|DT\|\|ID\|\|LP\|(\|DT\|\|ID\|){0,1}(\|COMA\|\|DT\|\|ID\|)*\|RP\|\|LB\|$"),
+    );
+    regexMap.insert("IF_LINE", Regex::new(
+    r"^\|IF\|\|LP\|((\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|)){1}(\|LO\|(\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|))*\|RP\|\|LB\|$"),
+    );
+    regexMap.insert("WHILE_LINE", Regex::new(
+r"^\|WH\|\|LP\|((\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|)){1}(\|LO\|(\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|))*\|RP\|\|LB\|$"),);
+    regexMap.insert("END_BLOCK_LINE", Regex::new(r"^\|RB\|$"));
+    regexMap.insert("DO_LINE", Regex::new(r"^\|DO\|\|LB\|$"));
+    regexMap.insert("DO_BLOCK_END", Regex::new(
+r"^\|WH\|\|LP\|((\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|)){1}(\|LO\|(\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|))*\|RP\|\|SC\|$"),);
+    regexMap.insert("SEMICOLON_LINE", Regex::new(r"^\|SC\|$"));
 
     for (regexLine, regex) in regexMap {
-        if regex.is_match(line) {
-            return Ok(format!("Linea {} Valida: {}", lineN, regexLine));
+        match regex {
+            Ok(re) => {
+                if re.is_match(line) {
+                    return Ok(format!("Linea {} Valida: {}", lineN, regexLine));
+                }
+            }
+            Err(e) => return Err(CompilerError::RegexError(e)),
         }
     }
 
-    Err( CompilerError::InvalidSyntax( lineN ) )
+    Err(CompilerError::InvalidSyntax(lineN))
 }
