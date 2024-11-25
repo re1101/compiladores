@@ -13,3 +13,8 @@ variable = 12;
 do{
     int f = 0;
 }while(f <= 8 && h <13);
+
+if( b== 16 || 3<a){
+    a = b;
+    b = 25;
+}
