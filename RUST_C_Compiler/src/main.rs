@@ -81,8 +81,6 @@ fn main() -> Result<(), CompilerError> {
             let logicalLine = &logicalLine.replace("!=", " TEMPNOT");
             let logicalLine = &logicalLine.replace("<>", " TEMPDIFF");
 
-            //println!("DEBUG: first replace logicalLine => {:?}", logicalLine);
-
             // Expresión regular para capturar palabras, simbolos y delimitadores
             let reT = Regex::new(r"\w+|[^\w\s]").unwrap();
             // Buscar coincidencias en la cadena
