@@ -61,6 +61,9 @@ fn main() -> Result<(), CompilerError> {
     if let Ok(lines) = read_lines(path) {
         for line in lines {
             if let Ok(line) = line {
+                if is_line_commented(&line) {
+                    continue;
+                }
                 linesBuffer.push_str(&line); // Agrega la línea al buffer
             }
         }
@@ -72,7 +75,12 @@ fn main() -> Result<(), CompilerError> {
 
         let mut currentLine: u16 = 0;
 
+        let mut var_table: BTreeMap<String, String> = BTreeMap::new();
+        let mut fn_table: BTreeMap<String, String> = BTreeMap::new();
+
         for logicalLine in logicalLines {
+            let logicalLine = &multiline_comment(logicalLine);
+            let logicalLine = &string_char_handling(logicalLine);
             let logicalLine = &logicalLine.replace("&&", " TEMPAND");
             let logicalLine = &logicalLine.replace("||", " TEMPOR");
             let logicalLine = &logicalLine.replace("==", " TEMPEQUALS");
@@ -135,8 +143,41 @@ where
     Ok(io::BufReader::new(file).lines())
 }
 
+fn is_line_commented(line: &str) -> bool {
+    let SINGLE_LINE_COMMENT_REGEX = Regex::new( r"\/\/.*"); // Soporte para comentarios unilinea
+    
+    let mut res: bool = false;
+
+    match SINGLE_LINE_COMMENT_REGEX{
+        Ok(ref regex) => if regex.is_match(line) {res = true;},
+        _ => {}
+    }
+
+    res
+}
+
+fn multiline_comment(line: &str) -> String{
+    let MULTI_LINE_COMMENT_REGEX = Regex::new( r"/\*.*?\*/").unwrap(); // Soporte para comentarios multilinea
+    
+    let res: String = MULTI_LINE_COMMENT_REGEX.replace_all(line, "").to_string();
+
+    res
+}
+
+fn string_char_handling(line: &str) -> String{
+    let STRING_REGEX = Regex::new( r#"^"(([^"\\]|\\.)*)"$"#).unwrap(); // Soporte para cadenas
+    let CHAR_REGEX = Regex::new( r"^'([^'\\]|\\.)'$").unwrap(); // Soporte para un solo caracter
+
+    let res: String = STRING_REGEX.replace_all(line, "STR").to_string();
+    let res: String = CHAR_REGEX.replace_all(&res, "CHR").to_string();
+
+    res
+}
+
 fn replace_tokens(token: &str, line: u16) -> Result<&str, CompilerError> {
     let regexMap = indexmap! (
+    "|STR|" => Regex::new("^STR$"),
+    "|CHR|" => Regex::new("^CHR$"),
     "|WH|" => Regex::new(r"^(while)$"),
     "|IF|" => Regex::new(r"^(if)$"),
     "|CASE|" => Regex::new(r"^(case)$"),
@@ -146,8 +187,8 @@ fn replace_tokens(token: &str, line: u16) -> Result<&str, CompilerError> {
     "|ID|" => Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]{0,30}$"),
     "|NU|" => Regex::new(r"^[0-9]+$"),
     "|CA|" => Regex::new(r"^(\+=|-=|\*=|/=|\+\+|--)$"),
-    "|OP|" => Regex::new(r"^[+\-*/%^!]$"),
-    "|LO|" => Regex::new(r"^(&&|\|\|)$$"),
+    "|OP|" => Regex::new(r"^[+\-*/%\^!]$"),
+    "|LO|" => Regex::new(r"^(&&|\|\|)$"),
     "|BO|" => Regex::new(r"^(&|\||\^|~|<<|>>)$"),
     "|CO|" => Regex::new(r"^(==|!=|<|<=|>|>=|<>)$"),
     "|AS|" => Regex::new(r"^=$"),
@@ -162,12 +203,6 @@ fn replace_tokens(token: &str, line: u16) -> Result<&str, CompilerError> {
     "|SC|" => Regex::new(r"^;$"),
     "|COL|" => Regex::new(r"^:$"),
     );
-
-    //regexMap.insert( "|STR|" , Regex::new( r#"(([^"\\]|\\.)*)"#)); // Soporte para cadenas
-    //regexMap.insert( "|CHR|" , Regex::new( r"'([^'\\]|\\.){1}'")); // Soporte para un solo caracter
-
-    //regexMap.insert( SINGLE_LINE_COMMENT_REGEX , Regex::new( r"\\/\\/.*")); // Soporte para comentarios unilinea
-    //regexMap.insert( MULTI_LINE_COMMENT_REGEX , Regex::new( r"/\\*([^*]|\\*(?!/))*\\*/")); // Soporte para comentarios multilinea
 
     let mut family: &str = "";
 
