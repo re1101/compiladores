@@ -1,7 +1,5 @@
 char c = 'a';
 
-char[] s = "Esto es un string";
-
 int funcion(int a){
  
     int c = 8;
@@ -16,7 +14,7 @@ variable = 12;
 
 // Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua
 
-do{
+do{ // Esto es un do
     int f = 0;
 }while(f <= 8 && h <13);
 

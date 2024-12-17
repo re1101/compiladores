@@ -24,6 +24,8 @@ enum CompilerError {
     RegexError(regex::Error),
     InvalidSyntax(u16),
     InvalidToken(String, u16),
+    NoSuchVar(String, u16),
+    MissmatchedTypes(String, u16),
 }
 
 impl fmt::Display for CompilerError {
@@ -34,6 +36,12 @@ impl fmt::Display for CompilerError {
             CompilerError::InvalidSyntax(line) => write!(f, "Invalid syntax at line: {}", line),
             CompilerError::InvalidToken(token, line) => {
                 write!(f, "Invalid token \"{}\" at line: {}", token, line)
+            }
+            CompilerError::NoSuchVar(token, line) => {
+                write!(f, "Invalid Var \"{}\" at line: {}", token, line)
+            }
+            CompilerError::MissmatchedTypes(token, line) => {
+                write!(f, "Missmatched Var \"{}\" at line: {}", token, line)
             }
         }
     }
@@ -111,18 +119,40 @@ fn main() -> Result<(), CompilerError> {
 
             let mut families: Vec<&str> = Vec::new();
 
-            for token in tokens {
-                families.push(match replace_tokens(token, currentLine) {
-                    Ok(val) => val,
+            for token in tokens.clone() {
+                match replace_tokens(token, currentLine) {
+                    Ok((fam)) => families.push(fam),
                     Err(e) => return Err(e),
-                });
+                };
             }
 
-            let newLine: String = families.into_iter().collect();
+            let newLine: String = families.clone().into_iter().collect();
+            let mut syntax: String = String::new();
 
             match check_syntax(&newLine, currentLine) {
-                Ok(val) => println!("{}", val),
+                Ok(val) => {syntax.push_str(&val.clone()); println!("{}", val);},
                 Err(e) => return Err(e),
+            };
+
+            match syntax.as_str() {
+                "CHR_INITIALIZATION_LINE" => {
+                    let (proto_filtered ,protos) = replace_proto_lines(tokens.clone(), &newLine);
+                    for i in 0..tokens.len() {
+                        if families[i] == proto_filtered[i] && families[i] == "|ID|"{
+                            var_table.insert(tokens[i].to_string(), "Char".to_string());
+                        }
+                    }
+                    let (proto_type, proto_toks) = protos;
+                    for proto_tok in proto_toks {
+                        if !var_table.contains_key(&proto_tok){
+                            return Err(CompilerError::NoSuchVar(proto_tok, currentLine));
+                        }
+                        else if var_table.get(&proto_tok).unwrap() != &proto_type {
+                            return Err(CompilerError::MissmatchedTypes(proto_tok, currentLine));
+                        }
+                    }
+                },
+                _=> println!(""),
             };
 
             currentLine += 1;
@@ -165,11 +195,11 @@ fn multiline_comment(line: &str) -> String{
 }
 
 fn string_char_handling(line: &str) -> String{
-    let STRING_REGEX = Regex::new( r#"^"(([^"\\]|\\.)*)"$"#).unwrap(); // Soporte para cadenas
-    let CHAR_REGEX = Regex::new( r"^'([^'\\]|\\.)'$").unwrap(); // Soporte para un solo caracter
+    let STRING_REGEX = Regex::new( r#""(([^"\\]|\\.)*)""#).unwrap(); // Soporte para cadenas
+    let CHAR_REGEX = Regex::new( r"'([^'\\]|\\.)'").unwrap(); // Soporte para un solo caracter
 
-    let res: String = STRING_REGEX.replace_all(line, "STR").to_string();
-    let res: String = CHAR_REGEX.replace_all(&res, "CHR").to_string();
+    let aux: String = STRING_REGEX.replace_all(line, "STR").to_string();
+    let res: String = CHAR_REGEX.replace_all(&aux, "CHR").to_string();
 
     res
 }
@@ -228,12 +258,15 @@ fn replace_tokens(token: &str, line: u16) -> Result<&str, CompilerError> {
 fn check_syntax(line: &str, lineN: u16) -> Result<String, CompilerError> {
     let mut regexMap = BTreeMap::new();
 
-    regexMap.insert("INITIALIZATION_LINE", Regex::new(
-        r"^\|DT\|\|ID\|((\|AS\|(\|ID\||\|NU\|)){0,1}(\|OP\|(\|ID\||\|NU\|))*)(\|COMA\|\|ID\|((\|AS\|(\|ID\||\|NU\|)){0,1}(\|OP\|(\|ID\||\|NU\|))*))*\|SC\|$"
+    regexMap.insert("NU_INITIALIZATION_LINE", Regex::new(
+        r"^\|DT\|\|ID\|((\|AS\|(\|ID\||\|NU\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|)){0,1}(\|OP\|(\|ID\||\|NU\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|))*)(\|COMA\|\|ID\|((\|AS\|(\|ID\||\|NU\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|)){0,1}(\|OP\|(\|ID\||\|NU\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|))*))*\|SC\|$"
+    ));
+    regexMap.insert("CHR_INITIALIZATION_LINE", Regex::new(
+        r"^\|DT\|\|ID\|((\|AS\|(\|ID\||\|CHR\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|)){0,1}(\|OP\|(\|ID\||\|CHR\|))*)(\|COMA\|\|ID\|((\|AS\|(\|ID\||\|CHR\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|)){0,1}(\|OP\|(\|ID\||\|CHR\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|))*))*\|SC\|$"
     ));
     regexMap.insert(
         "ASSIGNATION_LINE",
-        Regex::new(r"^\|ID\|((\|AS\|(\|ID\||\|NU\|)){1}(\|OP\|(\|ID\||\|NU\|))*)\|SC\|$"),
+        Regex::new(r"^\|ID\|((\|AS\|(\|ID\||\|NU\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|)){1}(\|OP\|(\|ID\||\|NU\||\|ID\|\|LP\|(\|ID\||\|NU\||\|CHR\|){0,1}(\|COMA\|(\|ID\||\|NU\||\|CHR\|))*\|RP\|))*)\|SC\|$"),
     );
     regexMap.insert(
         "FUNCTION_LINE",
@@ -254,7 +287,7 @@ r"^\|WH\|\|LP\|((\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|)){1}(\|LO\|(\|ID\||\|NU\|)\|
         match regex {
             Ok(re) => {
                 if re.is_match(line) {
-                    return Ok(format!("Linea {} Valida: {}", lineN, regexLine));
+                    return Ok(regexLine.to_string())//Ok(format!("Linea {} Valida: {}", lineN, regexLine));
                 }
             }
             Err(e) => return Err(CompilerError::RegexError(e)),
@@ -262,4 +295,25 @@ r"^\|WH\|\|LP\|((\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|)){1}(\|LO\|(\|ID\||\|NU\|)\|
     }
 
     Err(CompilerError::InvalidSyntax(lineN))
+}
+
+fn replace_proto_lines(token_vec: Vec<&str>, tokenized_line: &str) -> (Vec<String>, (String, Vec<String>)) {
+    let mut regexMap = indexmap!(
+        "PROTO_FN_CHR" => Regex::new(),
+        "PROTO_FN_NU" => Regex::new(),
+        "PROTO_ASSIGN" => Regex::new(),
+    );
+
+    let res = Vec::new();
+    let typ = String::new();
+    let proto = Vec::new();
+
+    for token in token_vec {
+        match token {
+            "" => {},
+            _ => {},
+        }
+    }
+
+    (res, (typ, proto))
 }
