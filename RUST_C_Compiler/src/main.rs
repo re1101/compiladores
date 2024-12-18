@@ -152,6 +152,35 @@ fn main() -> Result<(), CompilerError> {
                         }
                     }
                 },
+                "NU_INITIALIZATION_LINE" => {
+                    let (proto_filtered ,protos) = replace_proto_lines(tokens.clone(), &newLine);
+                    for i in 0..tokens.len() {
+                        if families[i] == proto_filtered[i] && families[i] == "|ID|"{
+                            var_table.insert(tokens[i].to_string(), "Num".to_string());
+                        }
+                    }
+                    let (proto_type, proto_toks) = protos;
+                    for proto_tok in proto_toks {
+                        if !var_table.contains_key(&proto_tok){
+                            return Err(CompilerError::NoSuchVar(proto_tok, currentLine));
+                        }
+                        else if var_table.get(&proto_tok).unwrap() != &proto_type {
+                            return Err(CompilerError::MissmatchedTypes(proto_tok, currentLine));
+                        }
+                    }
+                },
+                "ASSIGNATION_LINE" => {
+                    let (proto_filtered ,protos) = replace_proto_lines(tokens.clone(), &newLine);
+                    let (proto_type, proto_toks) = protos;
+                    for proto_tok in proto_toks {
+                        if !var_table.contains_key(&proto_tok){
+                            return Err(CompilerError::NoSuchVar(proto_tok, currentLine));
+                        }
+                        else if var_table.get(&proto_tok).unwrap() != &proto_type {
+                            return Err(CompilerError::MissmatchedTypes(proto_tok, currentLine));
+                        }
+                    }
+                }
                 _=> println!(""),
             };
 
