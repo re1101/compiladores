@@ -85,6 +85,8 @@ fn main() -> Result<(), CompilerError> {
 
         let mut var_table: BTreeMap<String, String> = BTreeMap::new();
         let mut fn_table: BTreeMap<String, String> = BTreeMap::new();
+        let mut aux_table: BTreeMap<String, String> = BTreeMap::new();
+        let mut toggle_aux: bool = false;
 
         for logicalLine in logicalLines {
             let logicalLine = &multiline_comment(logicalLine);
@@ -130,58 +132,71 @@ fn main() -> Result<(), CompilerError> {
             let mut syntax: String = String::new();
 
             match check_syntax(&newLine, currentLine) {
-                Ok(val) => {syntax.push_str(&val.clone()); println!("{}", val);},
+                Ok(val) => {
+                    syntax.push_str(&val.clone());
+                    println!("{}", val);
+                }
                 Err(e) => return Err(e),
             };
 
             match syntax.as_str() {
                 "CHR_INITIALIZATION_LINE" => {
-                    let (proto_filtered ,protos) = replace_proto_lines(tokens.clone(), &newLine);
+                    let (proto_filtered, protos) =
+                        replace_proto_lines(tokens.clone(), families.clone(), &newLine);
                     for i in 0..tokens.len() {
-                        if families[i] == proto_filtered[i] && families[i] == "|ID|"{
+                        if families[i] == proto_filtered[i] && families[i] == "|ID|" {
                             var_table.insert(tokens[i].to_string(), "Char".to_string());
                         }
                     }
                     let (proto_type, proto_toks) = protos;
-                    for proto_tok in proto_toks {
-                        if !var_table.contains_key(&proto_tok){
-                            return Err(CompilerError::NoSuchVar(proto_tok, currentLine));
-                        }
-                        else if var_table.get(&proto_tok).unwrap() != &proto_type {
-                            return Err(CompilerError::MissmatchedTypes(proto_tok, currentLine));
+                    for i in 0..proto_toks.len() {
+                        if families[i] == proto_filtered[i] && families[i] == "|ID|" {
+                            if !var_table.contains_key(&proto_toks[i]) {
+                                return Err(CompilerError::NoSuchVar(proto_toks[i].clone(), currentLine));
+                            } else if var_table.get(&proto_toks[i]).unwrap() != &proto_type {
+                                return Err(CompilerError::MissmatchedTypes(
+                                    proto_toks[i].clone(),
+                                    currentLine,
+                                ));
+                            }
                         }
                     }
-                },
+                }
                 "NU_INITIALIZATION_LINE" => {
-                    let (proto_filtered ,protos) = replace_proto_lines(tokens.clone(), &newLine);
+                    let (proto_filtered, protos) =
+                        replace_proto_lines(tokens.clone(), families.clone(), &newLine);
                     for i in 0..tokens.len() {
-                        if families[i] == proto_filtered[i] && families[i] == "|ID|"{
+                        if families[i] == proto_filtered[i] && families[i] == "|ID|" {
                             var_table.insert(tokens[i].to_string(), "Num".to_string());
                         }
                     }
                     let (proto_type, proto_toks) = protos;
-                    for proto_tok in proto_toks {
-                        if !var_table.contains_key(&proto_tok){
-                            return Err(CompilerError::NoSuchVar(proto_tok, currentLine));
-                        }
-                        else if var_table.get(&proto_tok).unwrap() != &proto_type {
-                            return Err(CompilerError::MissmatchedTypes(proto_tok, currentLine));
+                    for i in 0..proto_toks.len() {
+                        if families[i] == proto_filtered[i] && families[i] == "|ID|" {
+                            if !var_table.contains_key(&proto_toks[i]) {
+                                return Err(CompilerError::NoSuchVar(proto_toks[i].clone(), currentLine));
+                            } else if var_table.get(&proto_toks[i]).unwrap() != &proto_type {
+                                return Err(CompilerError::MissmatchedTypes(
+                                    proto_toks[i].clone(),
+                                    currentLine,
+                                ));
+                            }
                         }
                     }
-                },
+                }
                 "ASSIGNATION_LINE" => {
-                    let (proto_filtered ,protos) = replace_proto_lines(tokens.clone(), &newLine);
+                    let (_proto_filtered, protos) =
+                        replace_proto_lines(tokens.clone(), families.clone(), &newLine);
                     let (proto_type, proto_toks) = protos;
                     for proto_tok in proto_toks {
-                        if !var_table.contains_key(&proto_tok){
+                        if !var_table.contains_key(&proto_tok) {
                             return Err(CompilerError::NoSuchVar(proto_tok, currentLine));
-                        }
-                        else if var_table.get(&proto_tok).unwrap() != &proto_type {
+                        } else if var_table.get(&proto_tok).unwrap() != &proto_type {
                             return Err(CompilerError::MissmatchedTypes(proto_tok, currentLine));
                         }
                     }
                 }
-                _=> println!(""),
+                _ => println!(""),
             };
 
             currentLine += 1;
@@ -203,29 +218,33 @@ where
 }
 
 fn is_line_commented(line: &str) -> bool {
-    let SINGLE_LINE_COMMENT_REGEX = Regex::new( r"\/\/.*"); // Soporte para comentarios unilinea
-    
+    let SINGLE_LINE_COMMENT_REGEX = Regex::new(r"\/\/.*"); // Soporte para comentarios unilinea
+
     let mut res: bool = false;
 
-    match SINGLE_LINE_COMMENT_REGEX{
-        Ok(ref regex) => if regex.is_match(line) {res = true;},
+    match SINGLE_LINE_COMMENT_REGEX {
+        Ok(ref regex) => {
+            if regex.is_match(line) {
+                res = true;
+            }
+        }
         _ => {}
     }
 
     res
 }
 
-fn multiline_comment(line: &str) -> String{
-    let MULTI_LINE_COMMENT_REGEX = Regex::new( r"/\*.*?\*/").unwrap(); // Soporte para comentarios multilinea
-    
+fn multiline_comment(line: &str) -> String {
+    let MULTI_LINE_COMMENT_REGEX = Regex::new(r"/\*.*?\*/").unwrap(); // Soporte para comentarios multilinea
+
     let res: String = MULTI_LINE_COMMENT_REGEX.replace_all(line, "").to_string();
 
     res
 }
 
-fn string_char_handling(line: &str) -> String{
-    let STRING_REGEX = Regex::new( r#""(([^"\\]|\\.)*)""#).unwrap(); // Soporte para cadenas
-    let CHAR_REGEX = Regex::new( r"'([^'\\]|\\.)'").unwrap(); // Soporte para un solo caracter
+fn string_char_handling(line: &str) -> String {
+    let STRING_REGEX = Regex::new(r#""(([^"\\]|\\.)*)""#).unwrap(); // Soporte para cadenas
+    let CHAR_REGEX = Regex::new(r"'([^'\\]|\\.)'").unwrap(); // Soporte para un solo caracter
 
     let aux: String = STRING_REGEX.replace_all(line, "STR").to_string();
     let res: String = CHAR_REGEX.replace_all(&aux, "CHR").to_string();
@@ -316,7 +335,7 @@ r"^\|WH\|\|LP\|((\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|)){1}(\|LO\|(\|ID\||\|NU\|)\|
         match regex {
             Ok(re) => {
                 if re.is_match(line) {
-                    return Ok(regexLine.to_string())//Ok(format!("Linea {} Valida: {}", lineN, regexLine));
+                    return Ok(regexLine.to_string()); //Ok(format!("Linea {} Valida: {}", lineN, regexLine));
                 }
             }
             Err(e) => return Err(CompilerError::RegexError(e)),
@@ -326,7 +345,11 @@ r"^\|WH\|\|LP\|((\|ID\||\|NU\|)\|CO\|(\|ID\||\|NU\|)){1}(\|LO\|(\|ID\||\|NU\|)\|
     Err(CompilerError::InvalidSyntax(lineN))
 }
 
-fn replace_proto_lines(token_vec: Vec<&str>, tokenized_line: &str) -> (Vec<String>, (String, Vec<String>)) {
+fn replace_proto_lines(
+    token_vec: Vec<&str>,
+    families_vec: Vec<&str>,
+    tokenized_line: &str,
+) -> (Vec<String>, (String, Vec<String>)) {
     let mut regexMap = indexmap!(
         "PROTO_FN_CHR" => Regex::new(),
         "PROTO_FN_NU" => Regex::new(),
@@ -339,8 +362,8 @@ fn replace_proto_lines(token_vec: Vec<&str>, tokenized_line: &str) -> (Vec<Strin
 
     for token in token_vec {
         match token {
-            "" => {},
-            _ => {},
+            "" => {}
+            _ => {}
         }
     }
 
