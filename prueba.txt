@@ -3,6 +3,8 @@ int b, b1, b2, b3, b4, b5, b6, b7;
 
 int 30;
 
+float x = 0.01;
+
 int funcion(int a){
  
     int c = 8+a;
