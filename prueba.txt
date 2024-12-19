@@ -1,6 +1,8 @@
 char c = 'a';
 int b, b1, b2, b3, b4, b5, b6, b7;
 
+int 30;
+
 int funcion(int a){
  
     int c = 8+a;
