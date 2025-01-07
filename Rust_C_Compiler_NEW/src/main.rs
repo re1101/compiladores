@@ -16,6 +16,8 @@ enum TokenType {
     Parenthesis,
     SingleQuote,
     DoubleQuote,
+    String,
+    Char,
     Backslash,
     Space,
     Other,
@@ -71,11 +73,13 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
         }
 
         if in_string {
-            current_token.push(ch);
+            // current_token.push(ch); //Uncomment in case of needin' the quotes in the token type
             if ch == '"' && !escape {
                 in_string = false;
                 tokens.push((current_token.clone(), TokenType::DoubleQuote));
                 current_token.clear();
+            } else {
+                    current_token.push(ch); // Remove this in case of needin' the quotes in the token type
             }
             escape = ch == '\\' && !escape;
             chars.next();
@@ -83,11 +87,13 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
         }
 
         if in_char {
-            current_token.push(ch);
+            // current_token.push(ch); //Uncomment in case of needin' the quotes in the token type
             if ch == '\'' && !escape {
                 in_char = false;
-                tokens.push((current_token.clone(), TokenType::SingleQuote));
+                tokens.push((current_token.clone(), TokenType::Char));
                 current_token.clear();
+            } else {
+                current_token.push(ch); // Remove this in case of needin' the quotes in the token type
             }
             escape = ch == '\\' && !escape;
             chars.next();
@@ -124,8 +130,9 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
                     }
                     current_token.clear();
                 }
-                current_token.push(ch);
+                //current_token.push(ch); //Uncomment in case of needin' the quotes in the token type
                 in_string = true;
+                chars.next();
             }
             '\'' => {
                 if !current_token.is_empty() {
@@ -140,8 +147,9 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
                     }
                     current_token.clear();
                 }
-                current_token.push(ch);
+                //current_token.push(ch); //Uncomment in case of needin' the quotes in the token type
                 in_char = true;
+                chars.next();
             }
             _ if ch.is_whitespace() => {
                 if !current_token.is_empty() {
@@ -156,7 +164,7 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
                     }
                     current_token.clear();
                 }
-                tokens.push((" ".to_owned(), TokenType::Space)); // Add space as a token
+                //tokens.push((" ".to_owned(), TokenType::Space)); // Add space as a token
                 chars.next();
                 continue;
             }
@@ -302,7 +310,7 @@ impl Parser {
                         self.tokens.next();
                         None
                     }
-                }
+                },
                 _ => {
                     self.tokens.next();
                     None
