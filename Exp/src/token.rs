@@ -1,0 +1,23 @@
+#[derive(Debug, Clone, PartialEq)]
+pub enum Token {
+    DataType(String),
+    ControlStructure(String),
+    Identifier(String),
+    Number(String),
+    StringLiteral(String),
+    CharLiteral(char),
+    Symbol(char),
+    Assign,
+    Equals,
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    LessThan,
+    GreaterThan,
+    NotEquals,
+    And,
+    Or,
+    Whitespace,
+    Unknown(char),
+}

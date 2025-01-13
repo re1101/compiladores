@@ -1,0 +1,78 @@
+//The main function
+int main(void) {
+    //Print a string to the screen
+    printf("Hello world!\n");
+
+    //End the main program
+    //return 0;
+}
+
+
+char c = 'a';
+int b, b1, b2, b3, b4, b5, b6, b7;
+
+//int 30;
+
+float x;
+x = 0.01;
+
+y = 10;
+
+int funcion(int a){
+ 
+    int c = 8+a;
+
+    //return c;
+
+} 
+
+void funA (int c, int j, char opc){
+    if (opc != 'y'){
+        return;
+    } else if (c + j < 10){
+        while (j<10){
+            printf("%d", c+j);
+            j++;
+        }
+    }
+}
+
+b=9;
+int integer = 13;
+char prueb; 
+var= 2 - 10;
+variable = 12;
+
+// Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua
+
+while(f <= 8 && h <13){
+int g = 0;
+}
+
+if (1==1) {
+    int b0 = 0;
+}
+
+/* lalala
+la
+lalalalalala
+lalalalalalalalal
+alalalalalalalalla
+lalalalalalal
+alalalalalalalalal */
+
+int a = funcion('h');
+int a2 = g;
+
+int a3 = funcion(2);
+int a4 = funcion(a3);
+
+int a5 = b0;
+
+char new = funcion(a);
+char new2 = 2;
+
+if( b== 16 || 3<a){
+    a = b;
+    b = 'f';
+}

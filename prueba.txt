@@ -1,15 +1,28 @@
+//The main function
+int main(void) {
+    //Print a string to the screen
+    printf("Hello world!\n");
+
+    //End the main program
+    //return 0;
+}
+
+
 char c = 'a';
 int b, b1, b2, b3, b4, b5, b6, b7;
 
-int 30;
+//int 30;
 
-float x = 0.01;
+float x;
+x = 0.01;
+
+y = 10;
 
 int funcion(int a){
  
     int c = 8+a;
 
-    return c;
+    //return c;
 
 } 
 
@@ -56,7 +69,7 @@ int a4 = funcion(a3);
 
 int a5 = b0;
 
-char new = funcion(int a);
+char new = funcion(a);
 char new2 = 2;
 
 if( b== 16 || 3<a){

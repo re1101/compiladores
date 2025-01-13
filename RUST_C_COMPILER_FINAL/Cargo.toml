@@ -1,0 +1,6 @@
+[package]
+name = "RUST_C_COMPILER_FINAL"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]

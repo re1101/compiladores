@@ -1,43 +1,11 @@
+mod node_dict;
+mod compiler_error;
+
+use node_dict::TokenType;
+use compiler_error::CompilerError;
+
 use regex::Regex;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::iter::Peekable;
-use std::path::Path;
-
-// Token types
-#[derive(Debug)]
-enum TokenType {
-    Identifier,
-    ReservedWord,
-    Number,
-    Semicolon,
-    Colon,
-    Operator,
-    Parenthesis,
-    SingleQuote,
-    DoubleQuote,
-    String,
-    Char,
-    Backslash,
-    Space,
-    Other,
-}
-
-// List of C reserved words
-const RESERVED_WORDS: &[&str] = &[
-    "auto", "break", "case", "char", "const", "continue", "default", "do",
-    "double", "else", "enum", "extern", "float", "for", "goto", "if", "inline",
-    "int", "long", "register", "restrict", "return", "short", "signed", "sizeof",
-    "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile",
-    "while", "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex", "_Generic",
-    "_Imaginary", "_Noreturn", "_Static_assert", "_Thread_local",
-];
-
-// List of operators and symbols
-const OPERATORS_AND_SYMBOLS: &[&str] = &[
-    "+", "-", "*", "/", "%", "=", "==", "!=", ">", "<", ">=", "<=", "&&", "||", "!",
-    "&", "|", "^", "~", "<<", ">>", "++", "--", "->", ".", ";", ":", "(", ")", "{", "}",
-];
+use std::{fs::File, io::{self, BufRead}, iter::Peekable, ops::AddAssign, path::Path, str::SplitWhitespace};
 
 // Check if a token is a valid identifier
 fn is_identifier(token: &str) -> bool {
@@ -76,10 +44,10 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
             // current_token.push(ch); //Uncomment in case of needin' the quotes in the token type
             if ch == '"' && !escape {
                 in_string = false;
-                tokens.push((current_token.clone(), TokenType::DoubleQuote));
+                tokens.push((current_token.clone(), TokenType::String));
                 current_token.clear();
             } else {
-                    current_token.push(ch); // Remove this in case of needin' the quotes in the token type
+                current_token.push(ch); // Remove this in case of needin' the quotes in the token type
             }
             escape = ch == '\\' && !escape;
             chars.next();
@@ -119,14 +87,14 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
             }
             '"' => {
                 if !current_token.is_empty() {
-                    if RESERVED_WORDS.contains(&current_token.as_str()) {
-                        tokens.push((current_token.clone(), TokenType::ReservedWord));
+                    if node_dict::RESERVED_WORDS.contains(&current_token.as_str()) {
+                        //tokens.push((current_token.clone(), TokenType::ReservedWord)); //TODO: Function to differentiate between reserved words
                     } else if is_identifier(&current_token) {
                         tokens.push((current_token.clone(), TokenType::Identifier));
-                    } else if is_number(&current_token) {
-                        tokens.push((current_token.clone(), TokenType::Number));
+                    } else if is_number(&current_token) { 
+                        //tokens.push((current_token.clone(), TokenType::Number)); //TODO: Function to differentiate between int, float and double
                     } else {
-                        tokens.push((current_token.clone(), TokenType::Other));
+                        //tokens.push((current_token.clone(), TokenType::Other));
                     }
                     current_token.clear();
                 }
@@ -136,14 +104,14 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
             }
             '\'' => {
                 if !current_token.is_empty() {
-                    if RESERVED_WORDS.contains(&current_token.as_str()) {
-                        tokens.push((current_token.clone(), TokenType::ReservedWord));
+                    if node_dict::RESERVED_WORDS.contains(&current_token.as_str()) {
+                        //tokens.push((current_token.clone(), TokenType::ReservedWord)); //TODO: Function to differentiate between reserved words
                     } else if is_identifier(&current_token) {
                         tokens.push((current_token.clone(), TokenType::Identifier));
                     } else if is_number(&current_token) {
-                        tokens.push((current_token.clone(), TokenType::Number));
+                        //tokens.push((current_token.clone(), TokenType::Number)); //TODO: Function to differentiate between int, float and double
                     } else {
-                        tokens.push((current_token.clone(), TokenType::Other));
+                        //tokens.push((current_token.clone(), TokenType::Other));
                     }
                     current_token.clear();
                 }
@@ -153,14 +121,14 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
             }
             _ if ch.is_whitespace() => {
                 if !current_token.is_empty() {
-                    if RESERVED_WORDS.contains(&current_token.as_str()) {
-                        tokens.push((current_token.clone(), TokenType::ReservedWord));
+                    if node_dict::RESERVED_WORDS.contains(&current_token.as_str()) {
+                        //tokens.push((current_token.clone(), TokenType::ReservedWord)); // TODO Function to differentiate between reserved words
                     } else if is_identifier(&current_token) {
                         tokens.push((current_token.clone(), TokenType::Identifier));
                     } else if is_number(&current_token) {
-                        tokens.push((current_token.clone(), TokenType::Number));
+                        //tokens.push((current_token.clone(), TokenType::Number));//todo: function to differentiate between int, float and double
                     } else {
-                        tokens.push((current_token.clone(), TokenType::Other));
+                        //tokens.push((current_token.clone(), TokenType::Other));
                     }
                     current_token.clear();
                 }
@@ -168,19 +136,25 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
                 chars.next();
                 continue;
             }
-            _ if ch.is_digit(10) || (ch == '.' && current_token.chars().all(|c| c.is_digit(10))) => {
+            _ if ch.is_digit(10)
+                || (ch == '.' && current_token.chars().all(|c| c.is_digit(10))) =>
+            {
                 current_token.push(ch);
                 chars.next();
                 continue;
             }
             _ if ch.is_alphanumeric() || ch == '_' => {
-                if !current_token.is_empty() && !current_token.chars().all(|c| c.is_alphanumeric() || c == '_') {
+                if !current_token.is_empty()
+                    && !current_token
+                        .chars()
+                        .all(|c| c.is_alphanumeric() || c == '_')
+                {
                     if is_number(&current_token) {
-                        tokens.push((current_token.clone(), TokenType::Number));
+                        //tokens.push((current_token.clone(), TokenType::Number)); //todo: Function to differentiate between int, float and double
                     } else if is_identifier(&current_token) {
                         tokens.push((current_token.clone(), TokenType::Identifier));
                     } else {
-                        tokens.push((current_token.clone(), TokenType::Other));
+                        //tokens.push((current_token.clone(), TokenType::Other));
                     }
                     current_token.clear();
                 }
@@ -191,20 +165,26 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
             _ => {
                 if !current_token.is_empty() {
                     if is_number(&current_token) {
-                        tokens.push((current_token.clone(), TokenType::Number));
+                        //tokens.push((current_token.clone(), TokenType::Number)); //TODO: Function to differentiate between int, float and double
                     } else if is_identifier(&current_token) {
                         tokens.push((current_token.clone(), TokenType::Identifier));
                     } else {
-                        tokens.push((current_token.clone(), TokenType::Other));
+                        //tokens.push((current_token.clone(), TokenType::Other));
                     }
                     current_token.clear();
                 }
 
                 match ch {
-                    ';' => tokens.push((";".to_owned(), TokenType::Semicolon)),
-                    ':' => tokens.push((":".to_owned(), TokenType::Colon)),
-                    '(' | ')' | '{' | '}' => tokens.push((ch.to_string(), TokenType::Parenthesis)),
+                    '=' => tokens.push((ch.to_string(), TokenType::Assign)),
+                    ';' => tokens.push((ch.to_string(), TokenType::Semicolon)),
+                    ':' => tokens.push((ch.to_string(), TokenType::Colon)),
+                    ',' => tokens.push((ch.to_string(), TokenType::Comma)),
+                    '(' => tokens.push((ch.to_string(), TokenType::LParen)),
+                    ')' => tokens.push((ch.to_string(), TokenType::RParen)),
+                    '{' => tokens.push((ch.to_string(), TokenType::LBrack)),
+                    '}' => tokens.push((ch.to_string(), TokenType::RBrack)),
                     '\\' => tokens.push(("\\".to_owned(), TokenType::Backslash)),
+                    // TODO ADD OPERATORS ONE BY ONE
                     _ => {
                         let mut operator = String::new();
                         operator.push(ch);
@@ -214,18 +194,20 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
                             if next_ch.is_alphanumeric() || next_ch == '_' || next_ch == ' ' {
                                 break;
                             }
+
+
                             operator.push(next_ch);
-                            if !OPERATORS_AND_SYMBOLS.contains(&operator.as_str()) {
+                            if !node_dict::OPERATORS_AND_SYMBOLS.contains(&operator.as_str()) {
                                 operator.pop();
                                 break;
                             }
                             chars.next();
                         }
 
-                        if OPERATORS_AND_SYMBOLS.contains(&operator.as_str()) {
-                            tokens.push((operator.clone(), TokenType::Operator));
+                        if node_dict::OPERATORS_AND_SYMBOLS.contains(&operator.as_str()) {
+                            //tokens.push((operator.clone(), TokenType::Operator));
                         } else {
-                            tokens.push((operator.clone(), TokenType::Other));
+                            //tokens.push((operator.clone(), TokenType::Other));
                         }
                         continue;
                     }
@@ -236,15 +218,15 @@ fn tokenize_line(line: &str, in_multiline_comment: &mut bool) -> Vec<(String, To
     }
 
     if !current_token.is_empty() {
-        if RESERVED_WORDS.contains(&current_token.as_str()) {
-            tokens.push((current_token.clone(), TokenType::ReservedWord));
+        if node_dict::RESERVED_WORDS.contains(&current_token.as_str()) {
+            //tokens.push((current_token.clone(), TokenType::ReservedWord)); // TODO Function to differentiate between reserved words
         } else if is_identifier(&current_token) {
             tokens.push((current_token.clone(), TokenType::Identifier));
         } else if is_number(&current_token) {
-            tokens.push((current_token.clone(), TokenType::Number));
-        } else {
-            tokens.push((current_token.clone(), TokenType::Other));
-        }
+            //tokens.push((current_token.clone(), TokenType::Number)); // TODO Function to differentiate between int, float and double
+        } /*else {
+            tokens.push((current_token.clone(), TokenType::Other)); // TODO Error handling
+        }*/
     }
 
     tokens
@@ -261,11 +243,30 @@ fn read_file(file_path: &str) -> io::Result<Vec<String>> {
 // AST Node definitions
 #[derive(Debug)]
 enum ASTNode {
-    VariableDeclaration { var_type: String, var_name: String },
-    VariableAssignment { var_name: String, value: String },
-    FunctionDefinition { return_type: String, func_name: String, parameters: Vec<(String, String)>, body: Vec<ASTNode> },
-    WhileLoop { condition: String, body: Vec<ASTNode> },
-    IfStatement { condition: String, body: Vec<ASTNode>, else_body: Option<Vec<ASTNode>> },
+    VariableDeclaration {
+        var_type: String,
+        var_name: Vec<String>,
+        var_value: Vec<Option<String>>,
+    },
+    VariableAssignment {
+        var_name: String,
+        value: String,
+    },
+    FunctionDefinition {
+        return_type: String,
+        func_name: String,
+        parameters: Vec<(String, String)>,
+        body: Vec<ASTNode>,
+    },
+    WhileLoop {
+        condition: String,
+        body: Vec<ASTNode>,
+    },
+    IfStatement {
+        condition: String,
+        body: Vec<ASTNode>,
+        else_body: Option<Vec<ASTNode>>,
+    },
     Block(Vec<ASTNode>),
     Expression(String),
 }
@@ -293,23 +294,15 @@ impl Parser {
     fn parse_statement(&mut self) -> Option<ASTNode> {
         if let Some((token, token_type)) = self.tokens.peek() {
             match token_type {
-                TokenType::ReservedWord => {
-                    match token.as_str() {
-                        "int" | "float" | "char" => self.parse_variable_declaration(),
-                        "while" => self.parse_while_loop(),
-                        "if" => self.parse_if_statement(),
-                        "return" => self.parse_expression(),  // Simplified for this example
-                        _ => self.parse_expression(),
-                    }
-                }
+                TokenType::Integer | TokenType::Float | TokenType::Double | TokenType::Char => self.parse_declaration(),
+                //TokenType::Void => self.parse_void_declaration(),
+                TokenType::While => self.parse_while_loop(),
+                TokenType::If => self.parse_if_statement(),
                 TokenType::Identifier => self.parse_variable_assignment(),
-                TokenType::Parenthesis => {
-                    if token == "{" {
-                        self.parse_block()
-                    } else {
-                        self.tokens.next();
-                        None
-                    }
+                TokenType::LBrace => self.parse_block(),
+                TokenType::RBrace => {
+                    self.tokens.next();
+                    None
                 },
                 _ => {
                     self.tokens.next();
@@ -321,23 +314,79 @@ impl Parser {
         }
     }
 
-    fn parse_variable_declaration(&mut self) -> Option<ASTNode> {
+    fn parse_declaration(&mut self) -> Option<ASTNode> {
         let var_type = self.tokens.next()?.0;
-        let var_name = self.tokens.next()?.0;
+        let mut var_name = Vec::new();
+        let mut var_value = Vec::new();
+
+        //int a=8, b, c=9+5+10-12;
 
         // Expect a semicolon
-        if let Some((_, TokenType::Semicolon)) = self.tokens.next() {
+        loop {
+            let x = self.tokens.next();
+            match x {
+                Some ((token, TokenType::Semicolon)) => {
+                    break;
+                },
+                Some ((token, TokenType::Identifier)) => {
+                    var_name.push(token);
+                    let (auxTok, auxTokType) = self.tokens.peek().unwrap();
+                    if let TokenType::Comma = auxTokType {
+                        var_value.push(None);
+                        continue;
+                    } else if let TokenType::Assign = auxTokType {
+                        self.tokens.next();
+                        let mut value = String::new();
+                        while let Some((token, token_type)) = self.tokens.peek() {
+                            if let TokenType::Comma = token_type {
+                                break;
+                            } else {
+                                value.push_str(token);
+                                self.tokens.next();
+                            }
+                        }
+                        var_value.push(Some(value));
+                    } else {
+                        var_value.push(None);
+                    }
+                },
+                _ => {
+                    return None; // TODO Enviar error sintáctico
+                }
+            }
+
+            // TODO funcion para detectar valores
+
+            /*match x {
+                Some ((token, TokenType::)) => var_name.push(token),
+                _ => None, // TODO Enviar error sintáctico
+            }*/
+
+        }
+
+        /*if let Some((_, TokenType::Semicolon)) = self.tokens.next() {
             Some(ASTNode::VariableDeclaration { var_type, var_name })
         } else {
             None
-        }
+        }*/
+
+        //println!("Self Tokens: {:?}", self.tokens.next());
+        println!("Var_Type: {:?}; Var_Name: {:?}", var_type, var_name);
+
+        //println!("Next {:?}", self.tokens.next());
+
+        Some(ASTNode::VariableDeclaration {
+            var_type,
+            var_name,
+            var_value,
+        })
     }
 
     fn parse_variable_assignment(&mut self) -> Option<ASTNode> {
         let var_name = self.tokens.next()?.0;
 
         // Expect an assignment operator
-        if let Some((_, TokenType::Operator)) = self.tokens.next() {
+        if node_dict::isOperator(self.tokens.next().unwrap().1) {
             let mut value = String::new();
             while let Some((token, token_type)) = self.tokens.peek() {
                 if let TokenType::Semicolon = token_type {
@@ -360,9 +409,9 @@ impl Parser {
 
         // Expect a condition in parentheses
         let mut condition = String::new();
-        if let Some((_, TokenType::Parenthesis)) = self.tokens.next() {
+        if let Some((_, TokenType::LParen)) = self.tokens.next() {
             while let Some((token, token_type)) = self.tokens.peek() {
-                if let TokenType::Parenthesis = token_type {
+                if let TokenType::RParen = token_type {
                     self.tokens.next(); // Consume closing parenthesis
                     break;
                 } else {
@@ -385,9 +434,9 @@ impl Parser {
 
         // Expect a condition in parentheses
         let mut condition = String::new();
-        if let Some((_, TokenType::Parenthesis)) = self.tokens.next() {
+        if let Some((_, TokenType::LParen)) = self.tokens.next() {
             while let Some((token, token_type)) = self.tokens.peek() {
-                if let TokenType::Parenthesis = token_type {
+                if let TokenType::RParen = token_type {
                     self.tokens.next(); // Consume closing parenthesis
                     break;
                 } else {
@@ -420,7 +469,11 @@ impl Parser {
             None
         };
 
-        Some(ASTNode::IfStatement { condition, body, else_body })
+        Some(ASTNode::IfStatement {
+            condition,
+            body,
+            else_body,
+        })
     }
 
     fn parse_block(&mut self) -> Option<ASTNode> {
@@ -431,12 +484,10 @@ impl Parser {
         }
 
         let mut statements = Vec::new();
-        while let Some((token, token_type)) = self.tokens.peek() {
-            if let TokenType::Parenthesis = token_type {
-                if token == "}" {
-                    self.tokens.next(); // Consume '}'
-                    break;
-                }
+        while let Some((_token, token_type)) = self.tokens.peek() {
+            if let TokenType::RBrace = token_type {
+                self.tokens.next(); // Consume '}'
+                break;
             }
             if let Some(statement) = self.parse_statement() {
                 statements.push(statement);
@@ -487,6 +538,6 @@ fn process_code(file_path: &str) {
 
 // Main function
 fn main() {
-    let file_path = "../prueba.txt";  // Modify this path to point to your test file
+    let file_path = "../prueba.txt"; // Modify this path to point to your test file
     process_code(file_path);
 }

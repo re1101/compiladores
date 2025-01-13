@@ -1,1 +1,1 @@
-D:\Docs\GIT\ REPOS\compiladores\Rust_C_Compiler_NEW\target\debug\Rust_C_Compiler_NEW.exe: D:\Docs\GIT\ REPOS\compiladores\Rust_C_Compiler_NEW\src\main.rs
+D:\Docs\GIT\ REPOS\compiladores\Rust_C_Compiler_NEW\target\debug\Rust_C_Compiler_NEW.exe: D:\Docs\GIT\ REPOS\compiladores\Rust_C_Compiler_NEW\src\compiler_error.rs D:\Docs\GIT\ REPOS\compiladores\Rust_C_Compiler_NEW\src\main.rs D:\Docs\GIT\ REPOS\compiladores\Rust_C_Compiler_NEW\src\node_dict.rs
